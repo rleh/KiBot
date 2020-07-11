@@ -1,14 +1,15 @@
 import os
 import re
-from subprocess import (check_output, STDOUT, CalledProcessError)
-from .error import KiPlotConfigurationError
-from .misc import (KICAD2STEP, KICAD2STEP_ERR)
-from .gs import (GS)
-from .optionable import BaseOptions
+from subprocess import check_output, STDOUT, CalledProcessError
+from kiplot.error import KiPlotConfigurationError
+from kiplot.misc import KICAD2STEP, KICAD2STEP_ERR
+from kiplot.gs import GS
+from kiplot.optionable import BaseOptions
+from kiplot.out_base import BaseOutput
 from kiplot.macros import macros, document, output_class  # noqa: F401
-from . import log
+from kiplot.log import get_logger
 
-logger = log.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 class STEPOptions(BaseOptions):
@@ -79,7 +80,7 @@ class STEPOptions(BaseOptions):
 
 
 @output_class
-class STEP(BaseOutput):  # noqa: F821
+class STEP(BaseOutput):
     """ STEP (ISO 10303-21 Clear Text Encoding of the Exchange Structure)
         Exports the PCB as a 3D model.
         This is the most common 3D format for exchange purposes.

@@ -1,5 +1,6 @@
 from pcbnew import EXCELLON_WRITER
-from .out_any_drill import AnyDrill
+from kiplot.out_any_drill import AnyDrill
+from kiplot.out_base import BaseOutput
 from kiplot.macros import macros, document, output_class  # noqa: F401
 
 
@@ -24,7 +25,7 @@ class ExcellonOptions(AnyDrill):
 
 
 @output_class
-class Excellon(BaseOutput):  # noqa: F821
+class Excellon(BaseOutput):
     """ Excellon drill format
         This is the main format for the drilling machine.
         You can create a map file for documentation purposes.

@@ -2,9 +2,9 @@ from pcbnew import (PLOT_FORMAT_PDF, FromMM, ToMM)
 from kiplot.out_any_layer import AnyLayer
 from kiplot.drill_marks import DrillMarks
 from kiplot.macros import macros, document, output_class  # noqa: F401
-from . import log
+from kiplot.log import get_logger
 
-logger = log.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 class PDFOptions(DrillMarks):

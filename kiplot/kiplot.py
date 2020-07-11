@@ -17,6 +17,7 @@ from .error import (PlotError, KiPlotConfigurationError, config_error)
 from .pre_base import BasePreFlight
 from . import log
 
+
 logger = log.get_logger(__name__)
 
 
@@ -32,7 +33,11 @@ except ImportError:  # pragma: no cover
 
 def _import(name, path):
     # Python 3.4+ import mechanism
-    spec = spec_from_file_location("kiplot."+name, path)
+    # Macropy hook:
+    from macropy.core import import_hooks
+    spec = import_hooks.MacroFinder.find_spec("kiplot."+name, [os.path.dirname(path)])
+    if spec is None:
+        spec = spec_from_file_location("kiplot."+name, path)
     mod = module_from_spec(spec)
     spec.loader.exec_module(mod)
 
@@ -48,17 +53,12 @@ def _load_actions(path):
 
 def load_actions():
     """ Load all the available ouputs and preflights """
-    from mcpy import activate
-    # activate.activate()
     _load_actions(os.path.abspath(os.path.dirname(__file__)))
     home = os.environ.get('HOME')
     if home:
         dir = os.path.join(home, '.config', 'kiplot', 'plugins')
         if os.path.isdir(dir):
             _load_actions(dir)
-    if 'de_activate' in activate.__dict__:
-        logger.debug('Deactivating macros')
-        activate.de_activate()
 
 
 def check_version(command, version):

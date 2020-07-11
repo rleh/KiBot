@@ -1,13 +1,14 @@
 import os
 from subprocess import (check_output, STDOUT, CalledProcessError)
-from .misc import (CMD_IBOM, URL_IBOM, BOM_ERROR)
-from .gs import (GS)
-from .kiplot import (check_script)
-from .optionable import BaseOptions
+from kiplot.misc import (CMD_IBOM, URL_IBOM, BOM_ERROR)
+from kiplot.gs import (GS)
+from kiplot.kiplot import (check_script)
+from kiplot.optionable import BaseOptions
+from kiplot.out_base import BaseOutput
 from kiplot.macros import macros, document, output_class  # noqa: F401
-from . import log
+from kiplot.log import get_logger
 
-logger = log.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 class IBoMOptions(BaseOptions):
@@ -98,7 +99,7 @@ class IBoMOptions(BaseOptions):
 
 
 @output_class
-class IBoM(BaseOutput):  # noqa: F821
+class IBoM(BaseOutput):
     """ IBoM (Interactive HTML BoM)
         Generates an interactive web page useful to identify the position of the components in the PCB.
         For more information: https://github.com/INTI-CMNB/InteractiveHtmlBom

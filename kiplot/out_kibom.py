@@ -1,10 +1,11 @@
 import os
-from glob import (glob)
+from glob import glob
 from subprocess import (check_output, STDOUT, CalledProcessError)
-from .misc import (CMD_KIBOM, URL_KIBOM, BOM_ERROR)
-from .kiplot import (check_script)
-from .gs import (GS)
-from .optionable import BaseOptions
+from kiplot.misc import (CMD_KIBOM, URL_KIBOM, BOM_ERROR)
+from kiplot.kiplot import check_script
+from kiplot.gs import GS
+from kiplot.optionable import BaseOptions
+from kiplot.out_base import BaseOutput
 from kiplot.macros import macros, document, output_class  # noqa: F401
 from . import log
 
@@ -60,7 +61,7 @@ class KiBoMOptions(BaseOptions):
 
 
 @output_class
-class KiBoM(BaseOutput):  # noqa: F821
+class KiBoM(BaseOutput):
     """ KiBoM (KiCad Bill of Materials)
         Used to generate the BoM in HTML or CSV format using the KiBoM plug-in.
         For more information: https://github.com/INTI-CMNB/KiBoM

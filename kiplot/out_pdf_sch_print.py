@@ -1,13 +1,14 @@
 import os
-from subprocess import (call)
-from .gs import (GS)
-from .kiplot import (check_eeschema_do)
-from .misc import (CMD_EESCHEMA_DO, PDF_SCH_PRINT)
-from .optionable import BaseOptions
+from subprocess import call
+from kiplot.gs import GS
+from kiplot.kiplot import check_eeschema_do
+from kiplot.misc import CMD_EESCHEMA_DO, PDF_SCH_PRINT
+from kiplot.optionable import BaseOptions
+from kiplot.out_base import BaseOutput
 from kiplot.macros import macros, document, output_class  # noqa: F401
-from . import log
+from kiplot.log import get_logger
 
-logger = log.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 class PDF_Sch_PrintOptions(BaseOptions):
@@ -36,7 +37,7 @@ class PDF_Sch_PrintOptions(BaseOptions):
 
 
 @output_class
-class PDF_Sch_Print(BaseOutput):  # noqa: F821
+class PDF_Sch_Print(BaseOutput):
     """ PDF Schematic Print (Portable Document Format)
         Exports the PCB to the most common exhange format. Suitable for printing.
         This is the main format to document your schematic.

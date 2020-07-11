@@ -1,16 +1,17 @@
 import os
 from subprocess import (call)
-from .pre_base import BasePreFlight
-from .error import (KiPlotConfigurationError)
-from .gs import (GS)
-from .kiplot import (check_script)
-from .misc import (CMD_PCBNEW_PRINT_LAYERS, URL_PCBNEW_PRINT_LAYERS, PDF_PCB_PRINT)
-from .optionable import BaseOptions
+from kiplot.pre_base import BasePreFlight
+from kiplot.error import KiPlotConfigurationError
+from kiplot.gs import GS
+from kiplot.kiplot import check_script
+from kiplot.misc import CMD_PCBNEW_PRINT_LAYERS, URL_PCBNEW_PRINT_LAYERS, PDF_PCB_PRINT
+from kiplot.optionable import BaseOptions
+from kiplot.out_base import BaseOutput
 from kiplot.macros import macros, document, output_class  # noqa: F401
-from .layer import Layer
-from . import log
+from kiplot.layer import Layer
+from kiplot.log import get_logger
 
-logger = log.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 class PDF_Pcb_PrintOptions(BaseOptions):
@@ -48,7 +49,7 @@ class PDF_Pcb_PrintOptions(BaseOptions):
 
 
 @output_class
-class PDF_Pcb_Print(BaseOutput):  # noqa: F821
+class PDF_Pcb_Print(BaseOutput):
     """ PDF PCB Print (Portable Document Format)
         Exports the PCB to the most common exhange format. Suitable for printing.
         This is the main format to document your PCB.

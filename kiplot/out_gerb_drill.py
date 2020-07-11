@@ -1,5 +1,6 @@
 from pcbnew import GERBER_WRITER
-from .out_any_drill import AnyDrill
+from kiplot.out_any_drill import AnyDrill
+from kiplot.out_base import BaseOutput
 from kiplot.macros import macros, document, output_class  # noqa: F401
 
 
@@ -16,7 +17,7 @@ class Gerb_DrillOptions(AnyDrill):
 
 
 @output_class
-class Gerb_Drill(BaseOutput):  # noqa: F821
+class Gerb_Drill(BaseOutput):
     """ Gerber drill format
         This is the information for the drilling machine in gerber format.
         You can create a map file for documentation purposes.

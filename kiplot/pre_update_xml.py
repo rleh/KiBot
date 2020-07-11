@@ -1,17 +1,18 @@
-from sys import (exit)
-from subprocess import (call)
+from sys import exit
+from subprocess import call
 from kiplot.macros import macros, pre_class  # noqa: F401
-from .error import (KiPlotConfigurationError)
-from .gs import (GS)
-from .kiplot import (check_eeschema_do)
-from .misc import (CMD_EESCHEMA_DO, BOM_ERROR)
-from .log import (get_logger)
+from kiplot.pre_base import BasePreFlight
+from kiplot.error import KiPlotConfigurationError
+from kiplot.gs import GS
+from kiplot.kiplot import check_eeschema_do
+from kiplot.misc import CMD_EESCHEMA_DO, BOM_ERROR
+from kiplot.log import get_logger
 
 logger = get_logger(__name__)
 
 
 @pre_class
-class Update_XML(BasePreFlight):  # noqa: F821
+class Update_XML(BasePreFlight):
     """ [boolean=false] Update the XML version of the BoM (Bill of Materials). To ensure our generated BoM is up to date """
     def __init__(self, name, value):
         super().__init__(name, value)

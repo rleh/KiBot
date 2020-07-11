@@ -1,10 +1,11 @@
 import os
-from .gs import (GS)
+from kiplot.gs import GS
+from kiplot.pre_base import BasePreFlight
 from kiplot.macros import macros, pre_class  # noqa: F401
 
 
 @pre_class
-class Filters(BasePreFlight):  # noqa: F821
+class Filters(BasePreFlight):
     """ A list of entries to filter out ERC/DRC messages. Keys: `filter`, `number` and `regex` """
     def __init__(self, name, value):
         super().__init__(name, value)

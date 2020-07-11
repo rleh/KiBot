@@ -1,11 +1,12 @@
 import os
 import re
-from tempfile import (NamedTemporaryFile)
-from subprocess import (check_output, STDOUT, CalledProcessError)
-from .misc import (PCBDRAW, PCBDRAW_ERR)
-from .error import KiPlotConfigurationError
-from .gs import (GS)
-from .optionable import (BaseOptions, Optionable)
+from tempfile import NamedTemporaryFile
+from subprocess import check_output, STDOUT, CalledProcessError
+from kiplot.misc import PCBDRAW, PCBDRAW_ERR
+from kiplot.error import KiPlotConfigurationError
+from kiplot.gs import GS
+from kiplot.optionable import BaseOptions, Optionable
+from kiplot.out_base import BaseOutput
 from kiplot.macros import macros, document, output_class  # noqa: F401
 from . import log
 
@@ -233,7 +234,7 @@ class PcbDrawOptions(BaseOptions):
 
 
 @output_class
-class PcbDraw(BaseOutput):  # noqa: F821
+class PcbDraw(BaseOutput):
     """ PcbDraw - Beautiful 2D PCB render
         Exports the PCB as a 2D model (SVG, PNG or JPG).
         Uses configurable colors.

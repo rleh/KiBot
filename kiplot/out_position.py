@@ -2,8 +2,9 @@ import os
 import operator
 from datetime import datetime
 from pcbnew import (IU_PER_MM, IU_PER_MILS)
-from .optionable import BaseOptions
+from kiplot.optionable import BaseOptions
 from kiplot.macros import macros, document, output_class  # noqa: F401
+from kiplot.out_base import BaseOutput
 
 
 class PositionOptions(BaseOptions):
@@ -152,7 +153,7 @@ class PositionOptions(BaseOptions):
 
 
 @output_class
-class Position(BaseOutput):  # noqa: F821
+class Position(BaseOutput):
     """ Pick & place
         Generates the file with position information for the PCB components, used by the pick and place machine.
         This output is what you get from the 'File/Fabrication output/Footprint poistion (.pos) file' menu in pcbnew. """

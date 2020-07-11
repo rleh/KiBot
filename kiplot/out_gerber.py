@@ -1,6 +1,6 @@
 from pcbnew import (PLOT_FORMAT_GERBER, FromMM, ToMM)
-from .out_any_layer import (AnyLayer, AnyLayerOptions)
-from .error import KiPlotConfigurationError
+from kiplot.out_any_layer import (AnyLayer, AnyLayerOptions)
+from kiplot.error import KiPlotConfigurationError
 from kiplot.macros import macros, document, output_class  # noqa: F401
 
 

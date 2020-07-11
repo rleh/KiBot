@@ -1,16 +1,20 @@
-from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, Load, Store, UnaryOp, USub,
-                 ClassDef, Call, ImportFrom, alias)
+from macropy.core import (parse_stmt)
+from macropy.core.macros import Macros
+from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, Load, Store, UnaryOp, USub, ClassDef)
+
+macros = Macros()
 
 
-def document(sentences, to_source, **kw):
+@macros.block
+def document(tree, **kw):
     """ This macro takes literal strings and converts them into:
         _help_ID = type_hint+STRING
         where:
         ID is the first target of the last assignment.
         type_hint is the assigned type and default value (only works for a few types)
         STRING is the literal string """
-    for n in range(len(sentences)):
-        s = sentences[n]
+    for n in range(len(tree)):
+        s = tree[n]
         if not n:
             prev = s
             continue
@@ -54,10 +58,10 @@ def document(sentences, to_source, **kw):
                 target = Attribute(value=Name(id='self', ctx=Load()), attr=doc_id, ctx=Store())
             else:  # pragma: no cover
                 target = Name(id=doc_id, ctx=Store())
-            sentences[n] = Assign(targets=[target], value=Str(s=type_hint+s.value.s))
+            tree[n] = Assign(targets=[target], value=Str(s=type_hint+s.value.s))
         prev = s
     # Return the modified AST
-    return sentences
+    return tree
 
 
 def _do_wrap_class_register(tree, mod, base_class):
@@ -65,23 +69,17 @@ def _do_wrap_class_register(tree, mod, base_class):
         # Create the register call
         name = tree.name
         reg_name = name.lower()
-        # BaseOutput.register member:
-        attr = Attribute(value=Name(id=base_class, ctx=Load()), attr='register', ctx=Load())
-        # Function call to it passing reg_name and name
-        do_register = Expr(value=Call(func=attr, args=[Str(s=reg_name), Name(id=name, ctx=Load())], keywords=[]))
-
-        # Create the import
-        do_import = ImportFrom(module=mod, names=[alias(name=base_class, asname=None)], level=1)
-
-        return [do_import, tree, do_register]
+        do_import = parse_stmt("from kiplot.{} import {}".format(mod, base_class))
+        do_register = parse_stmt("{}.register('{}', {})".format(base_class, reg_name, name))
+        return [tree, do_import, do_register]
     # Just in case somebody applies it to anything other than a class
     return tree  # pragma: no cover
 
 
+@macros.decorator
 def output_class(tree, **kw):
     """A decorator to wrap a class with:
 
-       from .out_base import BaseOutput
        ... Class definition
        BaseOutput.register(CLASS_NAME_LOWER_STRING, CLASS_NAME)
 
@@ -89,10 +87,10 @@ def output_class(tree, **kw):
     return _do_wrap_class_register(tree, 'out_base', 'BaseOutput')
 
 
+@macros.decorator
 def pre_class(tree, **kw):
     """A decorator to wrap a class with:
 
-       from .pre_base import BasePreFlight
        ... Class definition
        BasePreFlight.register(CLASS_NAME_LOWER_STRING, CLASS_NAME)
 

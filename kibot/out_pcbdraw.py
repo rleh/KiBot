@@ -17,6 +17,8 @@ from .optionable import Optionable
 from .out_base import VariantOptions
 from .macros import macros, document, output_class  # noqa: F401
 from . import log
+from .mcpyrate.debug import macros, step_expansion
+
 
 logger = log.get_logger(__name__)
 SVG2PNG = 'rsvg-convert'
@@ -28,27 +30,28 @@ class PcbDrawStyle(Optionable):
 
     def __init__(self):
         super().__init__()
-        with document:
-            self.copper = "#417e5a"
-            """ color for the copper zones (covered by solder mask) """
-            self.board = "#4ca06c"
-            """ color for the board without copper (covered by solder mask) """
-            self.silk = "#f0f0f0"
-            """ color for the silk screen """
-            self.pads = "#b5ae30"
-            """ color for the exposed pads (metal finish) """
-            self.outline = "#000000"
-            """ color for the outline """
-            self.clad = "#9c6b28"
-            """ color for the PCB core (not covered by solder mask) """
-            self.vcut = "#bf2600"
-            """ color for the V-CUTS """
-            self.highlight_on_top = False
-            """ highlight over the component (not under) """
-            self.highlight_style = "stroke:none;fill:#ff0000;opacity:0.5;"
-            """ SVG code for the highlight style """
-            self.highlight_padding = 1.5
-            """ [0,1000] how much the highlight extends around the component [mm] """
+        with step_expansion:
+            with document:
+                self.copper = "#417e5a"
+                """ color for the copper zones (covered by solder mask) """
+                self.board = "#4ca06c"
+                """ color for the board without copper (covered by solder mask) """
+                self.silk = "#f0f0f0"
+                """ color for the silk screen """
+                self.pads = "#b5ae30"
+                """ color for the exposed pads (metal finish) """
+                self.outline = "#000000"
+                """ color for the outline """
+                self.clad = "#9c6b28"
+                """ color for the PCB core (not covered by solder mask) """
+                self.vcut = "#bf2600"
+                """ color for the V-CUTS """
+                self.highlight_on_top = False
+                """ highlight over the component (not under) """
+                self.highlight_style = "stroke:none;fill:#ff0000;opacity:0.5;"
+                """ SVG code for the highlight style """
+                self.highlight_padding = 1.5
+                """ [0,1000] how much the highlight extends around the component [mm] """
 
     def validate_color(self, name):
         color = getattr(self, name)
@@ -107,36 +110,37 @@ def _run_command(cmd, tmp_remap=False, tmp_style=False):
 
 class PcbDrawOptions(VariantOptions):
     def __init__(self):
-        with document:
-            self.style = PcbDrawStyle
-            """ [string|dict] PCB style (colors). An internal name, the name of a JSON file or the style options """
-            self.libs = Optionable
-            """ [list(string)=[]] list of libraries """
-            self.placeholder = False
-            """ show placeholder for missing components """
-            self.remap = PcbDrawRemap
-            """ [dict|None] replacements for PCB references using components (lib:component) """
-            self.no_drillholes = False
-            """ do not make holes transparent """
-            self.bottom = False
-            """ render the bottom side of the board (default is top side) """
-            self.mirror = False
-            """ mirror the board """
-            self.highlight = Optionable
-            """ [list(string)=[]] list of components to highlight """
-            self.show_components = Optionable
-            """ [list(string)|string=none] [none,all] list of components to draw, can be also a string for none or all.
-                The default is none """
-            self.vcuts = False
-            """ render V-CUTS on the Cmts.User layer """
-            self.warnings = 'visible'
-            """ [visible,all,none] using visible only the warnings about components in the visible side are generated """
-            self.dpi = 300
-            """ [10,1200] dots per inch (resolution) of the generated image """
-            self.format = 'svg'
-            """ [svg,png,jpg] output format. Only used if no `output` is specified """
-            self.output = GS.def_global_output
-            """ name for the generated file """
+        with step_expansion:
+            with document:
+                self.style = PcbDrawStyle
+                """ [string|dict] PCB style (colors). An internal name, the name of a JSON file or the style options """
+                self.libs = Optionable
+                """ [list(string)=[]] list of libraries """
+                self.placeholder = False
+                """ show placeholder for missing components """
+                self.remap = PcbDrawRemap
+                """ [dict|None] replacements for PCB references using components (lib:component) """
+                self.no_drillholes = False
+                """ do not make holes transparent """
+                self.bottom = False
+                """ render the bottom side of the board (default is top side) """
+                self.mirror = False
+                """ mirror the board """
+                self.highlight = Optionable
+                """ [list(string)=[]] list of components to highlight """
+                self.show_components = Optionable
+                """ [list(string)|string=none] [none,all] list of components to draw, can be also a string for none or all.
+                    The default is none """
+                self.vcuts = False
+                """ render V-CUTS on the Cmts.User layer """
+                self.warnings = 'visible'
+                """ [visible,all,none] using visible only the warnings about components in the visible side are generated """
+                self.dpi = 300
+                """ [10,1200] dots per inch (resolution) of the generated image """
+                self.format = 'svg'
+                """ [svg,png,jpg] output format. Only used if no `output` is specified """
+                self.output = GS.def_global_output
+                """ name for the generated file """
         super().__init__()
 
     def config(self):
@@ -297,6 +301,8 @@ class PcbDraw(BaseOutput):  # noqa: F821
         Can also render the components if the 2D models are available """
     def __init__(self):
         super().__init__()
-        with document:
-            self.options = PcbDrawOptions
-            """ [dict] Options for the `pcbdraw` output """
+        with step_expansion:
+            with document:
+                self.options = PcbDrawOptions
+                """ [dict] Options for the `pcbdraw` output """
+

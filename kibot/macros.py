@@ -10,7 +10,8 @@ from .gs import GS  # noqa: F401
 from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, Load, Store, UnaryOp, USub,
                  ClassDef, Call, ImportFrom, copy_location, alias)
 from .mcpyrate import unparse
-
+# from .mcpyrate.quotes import macros, q, u, n, a
+# from . import mcpyrate
 
 def document(sentences, **kw):
     """ This macro takes literal strings and converts them into:
@@ -19,9 +20,8 @@ def document(sentences, **kw):
         ID is the first target of the last assignment.
         type_hint is the assigned type and default value (only works for a few types)
         STRING is the literal string """
-    for n in range(len(sentences)):
-        s = sentences[n]
-        if not n:
+    for index, s in enumerate(sentences):
+        if not index:
             prev = s
             continue
         # The whole sentence is a string?
@@ -72,6 +72,14 @@ def document(sentences, **kw):
                 elif isinstance(val, str):
                     type_hint = "[string='{}']".format(val)
                 post_hint += '. Affected by global options'
+
+#             if is_attr:
+#                 doc_id = 'self.'+doc_id
+#             target = q[n[doc_id]]
+#             with q as quoted:  # block mode, produces a `list`
+#                 a[target] = u[type_hint + s.value.s.rstrip() + post_hint]
+#             sentences[index] = quoted[0]
+
             # Transform the string into an assign for _help_ID
             if is_attr:
                 target = Attribute(value=Name(id='self', ctx=Load()), attr=doc_id, ctx=Store())
@@ -80,10 +88,10 @@ def document(sentences, **kw):
             # Reuse the s.value Str
             help_str = s.value
             help_str.s = type_hint+s.value.s.rstrip()+post_hint
-            sentences[n] = Assign(targets=[target], value=help_str)
+            sentences[index] = Assign(targets=[target], value=help_str)
             # Copy the line number from the original docstring
             copy_location(target, s)
-            copy_location(sentences[n], s)
+            copy_location(sentences[index], s)
         prev = s
     # Return the modified AST
     return sentences

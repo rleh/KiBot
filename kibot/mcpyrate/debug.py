@@ -12,6 +12,7 @@ from sys import stderr
 import textwrap
 
 from .astdumper import dump
+from .colorizer import setcolor, colorize, ColorScheme
 from .dialects import StepExpansion  # re-export for discoverability, it's a debug feature
 from .expander import MacroCollector, namemacro, parametricmacro
 from .unparser import unparse_with_fallbacks
@@ -54,7 +55,7 @@ def step_expansion(tree, *, args, syntax, expander, **kw):
     if syntax not in ("expr", "block"):
         raise SyntaxError("`step_expansion` is an expr and block macro only")
 
-    formatter = functools.partial(unparse_with_fallbacks, debug=True)
+    formatter = functools.partial(unparse_with_fallbacks, debug=True, color=True)
     if args:
         if len(args) != 1:
             raise SyntaxError("expected `step_expansion` or `step_expansion['mode_str']`")
@@ -68,14 +69,17 @@ def step_expansion(tree, *, args, syntax, expander, **kw):
         if mode not in ("unparse", "dump"):
             raise ValueError(f"expected mode_str either 'unparse' or 'dump', got {repr(mode)}")
         if mode == "dump":
-            formatter = functools.partial(dump, include_attributes=True)
+            formatter = functools.partial(dump, include_attributes=True, color=True)
+
+    c, CS = setcolor, ColorScheme
 
     with _step_expansion_level.changed_by(+1):
         indent = 2 * _step_expansion_level.value
         stars = indent * '*'
         codeindent = indent
         tag = id(tree)
-        print(f"{stars}Tree 0x{tag:x} before macro expansion:", file=stderr)
+        print(f"{c(CS.HEADING)}{stars}Tree {c(CS.TREEID)}0x{tag:x} {c(CS.HEADING)}before macro expansion:{c(CS._RESET)}",
+              file=stderr)
         print(textwrap.indent(formatter(tree), codeindent * ' '), file=stderr)
         mc = MacroCollector(expander)
         mc.visit(tree)
@@ -84,12 +88,14 @@ def step_expansion(tree, *, args, syntax, expander, **kw):
             step += 1
             tree = expander.visit_once(tree)  # -> Done(body=...)
             tree = tree.body
-            print(f"{stars}Tree 0x{tag:x} after step {step}:", file=stderr)
+            print(f"{c(CS.HEADING)}{stars}Tree {c(CS.TREEID)}0x{tag:x} {c(CS.HEADING)}after step {step}:{c(CS._RESET)}",
+                  file=stderr)
             print(textwrap.indent(formatter(tree), codeindent * ' '), file=stderr)
             mc.clear()
             mc.visit(tree)
         plural = "s" if step != 1 else ""
-        print(f"{stars}Tree 0x{tag:x} macro expansion complete after {step} step{plural}.", file=stderr)
+        print(f"{c(CS.HEADING)}{stars}Tree {c(CS.TREEID)}0x{tag:x} {c(CS.HEADING)}macro expansion complete after {step} step{plural}.{c(CS._RESET)}",
+              file=stderr)
     return tree
 
 
@@ -103,16 +109,23 @@ def show_bindings(tree, *, syntax, expander, **kw):
 
     This can appear in any expression position, and at run-time evaluates to `None`.
 
-    At macro expansion time, for each macro binding, this prints to `sys.stderr`
-    the macro name, and the fully qualified name of the corresponding macro function.
+    At macro expansion time, when the macro expander reaches the `show_bindings`
+    expression, bindings *that are in effect at that point in time* are shown.
+
+    (That disclaimer is important, because hygienically unquoted macros may add
+     new bindings as those expressions are reached, and true to the dynamic nature
+     of Python, when a macro runs, it is allowed to edit the expander's bindings.)
+
+    For each macro binding, we print to `sys.stderr` the macro name, and the
+    fully qualified name of the corresponding macro function.
 
     Any bindings that have an uuid as part of the name are hygienically
-    unquoted macros. Those make a per-process global binding across all modules
-    and all expander instances.
+    unquoted macros. Those bindings are global across all modules and
+    all expander instances.
     """
     if syntax != "name":
         raise SyntaxError("`show_bindings` is an identifier macro only")
-    print(format_bindings(expander), file=stderr)
+    print(format_bindings(expander, color=True), file=stderr)
     # Can't just delete the node (return None) if it's in an Expr(value=...).
     #
     # For correct coverage reporting, we can't return a `Constant`, because CPython
@@ -125,19 +138,34 @@ def show_bindings(tree, *, syntax, expander, **kw):
     return ast.Call(func=lam, args=[], keywords=[])
 
 
-def format_bindings(expander):
+def format_bindings(expander, *, color=False):
     """Return a human-readable report of the macro bindings currently seen by `expander`.
 
     Global bindings (across all expanders) are also included.
 
+    If `color=True`, use `colorama` to colorize the output. (For terminals.)
+
     If you want to access them programmatically, just access `expander.bindings` directly.
     """
+    def maybe_setcolor(*colors):
+        if not color:
+            return ""
+        return setcolor(*colors)
+    def maybe_colorize(text, *colors):
+        if not color:
+            return text
+        return colorize(text, *colors)
+
+    c, CS = maybe_setcolor, ColorScheme
+
     with io.StringIO() as output:
-        output.write(f"Macro bindings for {expander.filename}:\n")
+        output.write(f"{c(CS.HEADING)}Macro bindings for {c(CS.SOURCEFILENAME)}{expander.filename}{c(CS.HEADING)}:{c(CS._RESET)}\n")
         if not expander.bindings:
-            output.write("    <no bindings>\n")
+            output.write(maybe_colorize("    <no bindings>\n",
+                                        ColorScheme.GREYEDOUT))
         else:
             for k, v in sorted(expander.bindings.items()):
+                k = maybe_colorize(k, ColorScheme.MACROBINDING)
                 output.write(f"    {k}: {format_macrofunction(v)}\n")
         return output.getvalue()
 

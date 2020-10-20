@@ -25,24 +25,27 @@ the `PYTHONDONTWRITEBYTECODE` environment variable, and the attribute
     https://www.python.org/dev/peps/pep-0552/
 '''
 
+__all__ = ["activate", "deactivate"]
+
 from importlib.machinery import SourceFileLoader, FileFinder
 from .importer import source_to_xcode, path_xstats, invalidate_xcaches
 
 
 def activate():
     SourceFileLoader.source_to_code = source_to_xcode
-    # we could replace SourceFileLoader.set_data with a no-op to force-disable pyc caching.
+    # Bytecode caching (`.pyc`) support. If you need to force-disable `.pyc`
+    # caching, replace `SourceFileLoader.set_data` with a no-op, like `mcpy` does.
     SourceFileLoader.path_stats = path_xstats
     FileFinder.invalidate_caches = invalidate_xcaches
 
 
-def de_activate():
-    SourceFileLoader.source_to_code = old_source_to_code
-    SourceFileLoader.path_stats = old_path_stats
-    FileFinder.invalidate_caches = old_invalidate_caches
+def deactivate():
+    SourceFileLoader.source_to_code = stdlib_source_to_code
+    SourceFileLoader.path_stats = stdlib_path_stats
+    FileFinder.invalidate_caches = stdlib_invalidate_caches
 
 
-old_source_to_code = SourceFileLoader.source_to_code
-old_path_stats = SourceFileLoader.path_stats
-old_invalidate_caches = FileFinder.invalidate_caches
+stdlib_source_to_code = SourceFileLoader.source_to_code
+stdlib_path_stats = SourceFileLoader.path_stats
+stdlib_invalidate_caches = FileFinder.invalidate_caches
 activate()

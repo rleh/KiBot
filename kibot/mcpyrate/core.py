@@ -8,7 +8,7 @@ from ast import NodeTransformer, AST
 from contextlib import contextmanager
 from collections import ChainMap
 
-from .astfixers import fix_missing_ctx, fix_missing_locations
+from .astfixers import fix_ctx, fix_locations
 from .markers import ASTMarker, delete_markers
 from .utils import flatten_suite, format_location
 
@@ -147,14 +147,17 @@ class BaseMacroExpander(NodeTransformer):
         macro function, place them in a dictionary and pass that dictionary
         as `kw`.
         '''
-        macro = self.bindings[macroname]
+        loc = format_location(self.filename, target, sourcecode)
+
+        macro = self.isbound(macroname)
+        if not macro:
+            raise MacroExpansionError(f"{loc}\nThe name '{macroname}' is not bound to a macro.")
+
         kw = kw or {}
         kw.update({
             'syntax': syntax,
             'expander': self,
             'invocation': target})
-
-        loc = format_location(self.filename, target, sourcecode)
 
         # Expand the macro.
         try:
@@ -200,8 +203,8 @@ class BaseMacroExpander(NodeTransformer):
         if it detects any more macro invocations.
         '''
         if expansion is not None:
-            expansion = fix_missing_locations(expansion, target, mode="reference")
-            expansion = fix_missing_ctx(expansion)
+            expansion = fix_locations(expansion, target, mode="reference")
+            expansion = fix_ctx(expansion)
             if self.recursive:
                 expansion = self.visit(expansion)
 
@@ -231,4 +234,9 @@ def global_postprocess(tree):
     Call this after macro expansion is otherwise done, before sending `tree`
     to Python's `compile`.
     '''
-    return delete_markers(tree, cls=MacroExpanderMarker)
+    tree = delete_markers(tree, cls=MacroExpanderMarker)
+    # A name macro, appearing as an assignment target, gets the wrong ctx,
+    # because when expanding the name macro, the expander sees only the Name
+    # node, and thus puts an `ast.Load` there as the ctx.
+    tree = fix_ctx(tree)
+    return tree

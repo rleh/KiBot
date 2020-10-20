@@ -301,7 +301,7 @@ class PcbDraw(BaseOutput):  # noqa: F821
         Can also render the components if the 2D models are available """
     def __init__(self):
         super().__init__()
-        with step_expansion:
+        with step_expansion["dump"]:
             with document:
                 self.options = PcbDrawOptions
                 """ [dict] Options for the `pcbdraw` output """

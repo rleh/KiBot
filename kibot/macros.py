@@ -10,8 +10,9 @@ from .gs import GS  # noqa: F401
 from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, Load, Store, UnaryOp, USub,
                  ClassDef, Call, ImportFrom, copy_location, alias)
 from .mcpyrate import unparse
-# from .mcpyrate.quotes import macros, q, u, n, a
-# from . import mcpyrate
+from .mcpyrate.quotes import macros, q, u, n, a
+from .mcpyrate.utils import rename
+from . import mcpyrate
 
 def document(sentences, **kw):
     """ This macro takes literal strings and converts them into:
@@ -72,26 +73,28 @@ def document(sentences, **kw):
                 elif isinstance(val, str):
                     type_hint = "[string='{}']".format(val)
                 post_hint += '. Affected by global options'
-
-#             if is_attr:
-#                 doc_id = 'self.'+doc_id
-#             target = q[n[doc_id]]
-#             with q as quoted:  # block mode, produces a `list`
-#                 a[target] = u[type_hint + s.value.s.rstrip() + post_hint]
-#             sentences[index] = quoted[0]
-
-            # Transform the string into an assign for _help_ID
-            if is_attr:
-                target = Attribute(value=Name(id='self', ctx=Load()), attr=doc_id, ctx=Store())
-            else:  # pragma: no cover
-                target = Name(id=doc_id, ctx=Store())
-            # Reuse the s.value Str
-            help_str = s.value
-            help_str.s = type_hint+s.value.s.rstrip()+post_hint
-            sentences[index] = Assign(targets=[target], value=help_str)
-            # Copy the line number from the original docstring
-            copy_location(target, s)
-            copy_location(sentences[index], s)
+            if True:
+                # Transform the string into an assign for _help_ID
+                target = q[self._] if is_attr else q[_]
+                copy_location(target, s)
+                with q as quoted:
+                    a[target] = u[type_hint + s.value.s.rstrip() + post_hint]
+                rename("_", doc_id, quoted)
+                sentences[index] = quoted[0]
+                copy_location(sentences[index], s)
+            else:
+                # Transform the string into an assign for _help_ID
+                if is_attr:
+                    target = Attribute(value=Name(id='self', ctx=Load()), attr=doc_id, ctx=Store())
+                else:  # pragma: no cover
+                    target = Name(id=doc_id, ctx=Store())
+                # Reuse the s.value Str
+                help_str = s.value
+                help_str.s = type_hint+s.value.s.rstrip()+post_hint
+                sentences[index] = Assign(targets=[target], value=help_str)
+                # Copy the line number from the original docstring
+                copy_location(target, s)
+                copy_location(sentences[index], s)
         prev = s
     # Return the modified AST
     return sentences

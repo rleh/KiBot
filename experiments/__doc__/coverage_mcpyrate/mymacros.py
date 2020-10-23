@@ -1,5 +1,6 @@
 from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, copy_location, walk)
 from mcpyrate.quotes import macros, q, u, n, a   # noqa: F401
+from mcpyrate.astfixers import fix_locations
 import mcpyrate  # noqa: F401
 
 
@@ -48,8 +49,7 @@ def document(tree, **kw):
             with q as quoted:
                 n[name] = u[type_hint + s.value.s.rstrip()]
             tree[index] = quoted[0]
-            for node in walk(tree[index]):
-                copy_location(node, s)
+            fix_locations(tree[index], s, mode="overwrite")
         prev = s
     # Return the modified AST
     return tree

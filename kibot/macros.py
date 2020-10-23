@@ -12,6 +12,7 @@ from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, Load, St
 from .mcpyrate import unparse
 from .mcpyrate.quotes import macros, q, u, n, a  # noqa: F401
 from .mcpyrate.splicing import splice_statements
+from .mcpyrate.astfixers import fix_locations
 from . import mcpyrate  # noqa: F401
 
 
@@ -79,8 +80,7 @@ def document(sentences, **kw):
                 name = 'self.'+doc_id if is_attr else doc_id
                 with q as quoted:
                     n[name] = u[type_hint+s.value.s.rstrip()+post_hint]
-                for node in walk(quoted[0]):
-                    copy_location(node, s)
+                fix_locations(quoted[0], s, mode="overwrite")
                 sentences[index] = quoted[0]
             else:
                 # Transform the string into an assign for _help_ID

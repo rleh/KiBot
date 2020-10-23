@@ -1,7 +1,9 @@
 # -*- coding: utf-8; -*-
 """Quasiquotes. Build ASTs in your macros, using syntax that mostly looks like regular code."""
 
-__all__ = ['capture', 'lookup', 'astify', 'unastify',
+__all__ = ['lift_identifier',
+           'capture_value', 'capture_macro',
+           'astify', 'unastify',
            'q', 'u', 'n', 'a', 's', 'h',
            'expand1q', 'expandq',
            'expand1', 'expand']
@@ -15,64 +17,137 @@ from .markers import ASTMarker, get_markers
 from .unparser import unparse
 from .utils import gensym, NestingLevelTracker
 
-# --------------------------------------------------------------------------------
+
+def _mcpyrate_quotes_attr(attr):
+    """Create an AST that, when compiled and run, looks up `mcpyrate.quotes.attr` in `Load` context."""
+    mcpyrate_quotes_module = ast.Attribute(value=ast.Name(id="mcpyrate"), attr="quotes")
+    return ast.Attribute(value=mcpyrate_quotes_module, attr=attr)
+
 
 class QuasiquoteMarker(ASTMarker):
     """Base class for AST markers used by quasiquotes. Compiled away by `astify`."""
     pass
 
-class ASTLiteral(QuasiquoteMarker):  # like `macropy`'s `Literal`
-    """Keep the given subtree as-is."""
+# --------------------------------------------------------------------------------
+# Unquote commands for `astify`. Each type corresponds to an unquote macro.
+
+class Unquote(QuasiquoteMarker):
+    """Interpolate the value of the given subtree into the quoted tree. Emitted by `u[]`."""
     pass
 
-class CaptureLater(QuasiquoteMarker):  # like `macropy`'s `Captured`
-    """Capture the value the given subtree evaluates to at the use site of `q`."""
+
+class LiftIdentifier(QuasiquoteMarker):
+    """Perform string to variable access conversion on given subtree. Emitted by `n[]`.
+
+    Details: convert the string the given subtree evaluates to, at the use site
+    of `q`, into the variable access the text of the string represents, when it
+    is interpreted as Python source code.
+
+    (This allows computing the name to be accessed.)
+    """
+    pass
+
+
+class ASTLiteral(QuasiquoteMarker):  # like `macropy`'s `Literal`
+    """Keep the given subtree as-is. Emitted by `a[]`.
+
+    Although the effect is similar, this is semantically different from
+    `mcpyrate.core.Done`. This controls AST unquoting in the quasiquote
+    subsystem, whereas `Done` tells the expander to stop expanding that
+    subtree.
+    """
+    pass
+
+
+class ASTList(QuasiquoteMarker):
+    """Interpolate the given `list` of AST nodes as an `ast.List` node. Emitted by `s[]`."""
+    pass
+
+
+class Capture(QuasiquoteMarker):  # like `macropy`'s `Captured`
+    """Capture given subtree hygienically. Emitted by `h[]`.
+
+    Details: capture the value or macro name the given subtree evaluates to,
+    at the use site of `q`. The value or macro reference is frozen (by pickle)
+    so that it can be restored also in another Python process later.
+    """
     def __init__(self, body, name):
         super().__init__(body)
         self.name = name
         self._fields += ["name"]
 
 # --------------------------------------------------------------------------------
+# Run-time parts of the unquote operators.
 
-# Hygienically captured run-time values... but to support `.pyc` caching, we can't use a per-process dictionary.
-# _hygienic_registry = {}
+# Unquote doesn't have its own function here, because it's a special case of `astify`.
 
-def _mcpyrate_quotes_attr(attr):
-    """Create an AST that, when compiled and run, looks up `mcpyrate.quotes.attr` in `Load` context."""
-    mcpyrate_quotes_module = ast.Attribute(value=ast.Name(id="mcpyrate", ctx=ast.Load()),
-                                           attr="quotes",
-                                           ctx=ast.Load())
-    return ast.Attribute(value=mcpyrate_quotes_module,
-                         attr=attr,
-                         ctx=ast.Load())
+def lift_identifier(value, filename="<unknown>"):
+    """Lift a string into a variable access. Run-time part of `n[]`.
 
-def capture(value, name):
-    """Hygienically capture a run-time value.
+    Examples::
+
+        lift_identifier("kitty") -> Name(id='kitty')
+        lift_identifier("kitty.tail") -> Attribute(value=Name(id='kitty'),
+                                                   attr='tail')
+        lift_identifier("kitty.tail.color") -> Attribute(value=Attribute(value=Name(id='kitty'),
+                                                                         attr='tail'),
+                                                         attr='color')
+
+    Works with subscript expressions, too::
+
+        lift_identifier("kitties[3].paws[2].claws")
+    """
+    if not isinstance(value, str):
+        raise TypeError(f"n[]: expected an expression that evaluates to str, result was {type(value)} with value {repr(value)}")
+    return ast.parse(value, filename=filename, mode="eval").body
+
+
+def ast_literal(tree):
+    """Interpolate an AST node. Run-time part of `a[]`."""
+    if not isinstance(tree, ast.AST):
+        raise TypeError(f"a[]: expected an AST node, got {type(tree)} with value {repr(tree)}")
+    return tree
+
+
+def ast_list(nodes):
+    """Interpolate a `list` of AST nodes as an `ast.List` node. Run-time part of `s[]`."""
+    if not isinstance(nodes, list):
+        raise TypeError(f"s[]: expected an expression that evaluates to list, result was {type(nodes)} with value {repr(nodes)}")
+    if not all(isinstance(tree, ast.AST) for tree in nodes):
+        raise ValueError(f"s[]: expected a list of AST nodes, got {repr(nodes)}")
+    return ast.List(elts=nodes)
+
+
+def capture_value(value, name):
+    """Hygienically capture a run-time value. Used by `h[]`.
 
     `value`: A run-time value. Must be picklable.
-    `name`:  A human-readable name.
+    `name`:  For human-readability.
 
     The return value is an AST that, when compiled and run, returns the
     captured value (even in another Python process later).
     """
     # If we didn't need to consider bytecode caching, we could just store the
-    # value in a registry that is populated at macro expansion time. Each
-    # unique value (by `id`) could be stored only once.
+    # value in a dictionary (that lives at the top level of `mcpyrate.quotes`)
+    # that is populated at macro expansion time. Each unique value (by `id`)
+    # could be stored only once.
     #
     # But we want to support bytecode caching. To avoid introducing hard-to-find
     # bugs into user code, we must provide consistent semantics, regardless of
     # whether updating of the bytecode cache is actually enabled or not (see
-    # `sys.dont_write_bytecode`).
+    # `sys.dont_write_bytecode`). So we must do the same thing regardless of
+    # whether the captured value is used in the current process, or in another
+    # Python process later.
     #
-    # If the macro expansion result is to be re-used from a `.pyc`, we must
-    # serialize and store the captured value to disk, so that values from
-    # "macro expansion time last week" remain available when the `.pyc` is
-    # loaded in another Python process, much later.
+    # If the macro expansion result is to remain available for re-use from a
+    # `.pyc`, we must serialize and store the captured value to disk, so that
+    # values from "macro expansion time last week" are still available when the
+    # `.pyc` is loaded in another Python process later.
     #
     # Modules are macro-expanded independently (no global finalization for the
     # whole codebase), and a `.pyc` may indeed later get loaded into some other
     # codebase that imports the same module, so we can't make a centralized
-    # registry, like we could without bytecode caching (for the current process).
+    # registry, like we could without bytecode caching.
     #
     # So really pretty much the only thing we can do reliably and simply is to
     # store a fresh serialized copy of the value at the capture location in the
@@ -82,31 +157,41 @@ def capture(value, name):
     # and serialization.
     #
     frozen_value = pickle.dumps(value)
-    return ast.Call(_mcpyrate_quotes_attr("lookup"),
+    return ast.Call(_mcpyrate_quotes_attr("lookup_value"),
                     [ast.Tuple(elts=[ast.Constant(value=name),
                                      ast.Constant(value=frozen_value)])],
                     [])
 
+
 _lookup_cache = {}
-def lookup(key):
-    """Look up a hygienically captured run-time value."""
+def lookup_value(key):
+    """Look up a hygienically captured run-time value. Used by `h[]`.
+
+    Usually there's no need to call this function manually; `capture_value`
+    (and thus also `h[]`) will generate an AST that calls this automatically.
+    """
     name, frozen_value = key
     cachekey = (name, id(frozen_value))  # id() so each capture instance behaves independently
     if cachekey not in _lookup_cache:
         _lookup_cache[cachekey] = pickle.loads(frozen_value)
     return _lookup_cache[cachekey]
 
+
 def capture_macro(macro, name):
-    """Hygienically capture a macro.
+    """Hygienically capture a macro. Used by `h[]`.
 
     `macro`: A macro function. Must be picklable.
-    `name`:  The name of the macro, as it appeared in the bindings of
-             the expander it was captured from. For human-readability.
+    `name`:  For human-readability. The recommended value is the name of
+             the macro, as it appeared in the bindings of the expander
+             it was captured from.
 
-    The return value is an AST that, when compiled and run, injects the
-    macro into the expander's global macro bindings table (even in another
-    Python process later), and then evaluates to that macro name as an
-    `ast.Name` (so further expansion of that AST will invoke the macro).
+    The name of the captured macro is automatically uniqified using
+    `gensym(name)`.
+
+    The return value is an AST that, when compiled and run, injects the macro
+    into the expander's global macro bindings table (even in another Python
+    process later), and then evaluates to the uniqified macro name as an
+    `ast.Name`, so that macro-expanding that AST will invoke the macro.
     """
     frozen_macro = pickle.dumps(macro)
     unique_name = gensym(name)
@@ -115,11 +200,15 @@ def capture_macro(macro, name):
                                      ast.Constant(value=frozen_macro)])],
                     [])
 
-def lookup_macro(key):
-    """Look up a hygienically captured macro.
 
-    This will inject the macro to the global macro bindings table,
-    and then evaluate to that macro name, as an `ast.Name`.
+def lookup_macro(key):
+    """Look up a hygienically captured macro. Used by `h[]`.
+
+    This injects the macro to the expander's global macro bindings table,
+    and then returns the macro name, as an `ast.Name`.
+
+    Usually there's no need to call this function manually; `capture_macro`
+    (and thus also `h[]`) will generate an AST that calls this automatically.
     """
     unique_name, frozen_macro = key
     if unique_name not in global_bindings:
@@ -127,37 +216,66 @@ def lookup_macro(key):
     return ast.Name(id=unique_name)
 
 # --------------------------------------------------------------------------------
+# The quasiquote compiler and uncompiler.
 
 def astify(x, expander=None):  # like `macropy`'s `ast_repr`
-    """Lift a value into its AST representation, if possible.
+    """Quasiquote compiler. Lift a value into its AST representation, if possible.
 
     When the AST is compiled and run, it will evaluate to `x`.
 
-    If `x` itself is an AST, then produce an AST that, when compiled and run,
-    will generate the AST `x`.
+    Note the above implies that if `x` itself is an AST, then this produces
+    an AST that, when compiled and run, will generate the AST `x`. This is
+    the mechanism that `q` uses to produce the quoted AST.
 
-    If the input is a `list` of ASTs for a statement suite, the return value
+    If the input is a `list` of ASTs (e.g. a statement suite), the return value
     is a single `ast.List` node, with its `elts` taken from the input list.
     However, most of the time it's not used this way, because `BaseMacroExpander`
     already translates a `visit` to a statement suite into visits to individual
-    nodes, because otherwise `ast.NodeTransformer` chokes on the input. (The only
-    exception is `q` in block mode; it'll produce a `List` this way.)
+    nodes, because `ast.NodeTransformer` requires that. The only exception is
+    `q` in block mode; it'll produce a `List` this way.
 
-    `expander` is a `BaseMacroExpander` instance, used for detecting macro names
-    inside `CaptureLater` markers. If no `expander` is provided, macros cannot be
-    hygienically captured.
+    `expander` is a `BaseMacroExpander` instance, used for detecting macros
+    inside `Capture` markers. Macros can be hygienically captured only if
+    an `expander` is provided.
 
-    Raises `TypeError` when the lifting fails.
+    Raises `TypeError` if the lifting fails.
     """
     def recurse(x):  # second layer just to auto-pass `expander` by closure.
         T = type(x)
 
-        # Drop the ASTLiteral wrapper; it only tells us to pass through this subtree as-is.
-        if T is ASTLiteral:
-            return x.body
+        # Compile the unquote commands.
+        #
+        # Minimally, `astify` must support `ASTLiteral`; the others could be
+        # implemented inside the unquote operators, as `ASTLiteral(ast.Call(...))`.
+        #
+        # But maybe this approach is cleaner. We can do almost everything here,
+        # in a regular function, and each unquote macro is just a thin wrapper
+        # on top of the corresponding marker type.
+        if T is Unquote:  # `u[]`
+            # We want to generate an AST that compiles to the *value* of `x.body`,
+            # evaluated at the use site of `q`. But when the `q` expands, it is
+            # too early. We must `astify` *at the use site* of `q`. So use an
+            # `ast.Call` to delay until run-time, and pass in `x.body` as-is.
+            return ast.Call(_mcpyrate_quotes_attr("astify"), [x.body], [])
 
-        # This is the magic part of q[h[]].
-        elif T is CaptureLater:
+        elif T is LiftIdentifier:  # `n[]`
+            # Delay the identifier lifting, so it runs at the use site of `q`,
+            # where the actual value of `x.body` becomes available.
+            filename = expander.filename if expander else "<unknown>"
+            return ast.Call(_mcpyrate_quotes_attr('lift_identifier'),
+                            [x.body,
+                             ast.Constant(value=filename)],
+                            [])
+
+        elif T is ASTLiteral:  # `a[]`
+            # Pass through this subtree as-is, but typecheck the argument
+            # at the use site of `q`.
+            return ast.Call(_mcpyrate_quotes_attr('ast_literal'), [x.body], [])
+
+        elif T is ASTList:  # `s[]`
+            return ast.Call(_mcpyrate_quotes_attr('ast_list'), [x.body], [])
+
+        elif T is Capture:  # `h[]`
             if expander and type(x.body) is ast.Name:
                 function = expander.isbound(x.body.id)
                 if function:
@@ -174,13 +292,15 @@ def astify(x, expander=None):  # like `macropy`'s `ast_repr`
                     return capture_macro(function, x.body.id)
             # Hygienically capture a garden variety run-time value.
             # At the use site of q[], this captures the value, and rewrites itself
-            # into a lookup. At the use site of the macro that used q[], that
-            # rewritten code looks up the captured value.
-            return ast.Call(_mcpyrate_quotes_attr('capture'),
+            # into an AST that represents a lookup. At the use site of the macro
+            # that used q[], that code runs, and looks up the captured value.
+            return ast.Call(_mcpyrate_quotes_attr('capture_value'),
                             [x.body,
                              ast.Constant(value=x.name)],
                             [])
 
+        # Builtin types. Mainly support for `u[]`, but also used by the
+        # general case for AST node fields that contain bare values.
         elif T in (int, float, str, bytes, bool, type(None)):
             return ast.Constant(value=x)
 
@@ -194,10 +314,11 @@ def astify(x, expander=None):  # like `macropy`'s `ast_repr`
         elif T is set:
             return ast.Set(elts=list(recurse(elt) for elt in x))
 
+        # General case.
         elif isinstance(x, ast.AST):
             # TODO: Add support for astifying ASTMarkers?
-            # TODO: Otherwise the same as regular AST node, but need to refer to the
-            # TODO: module it is defined in, and we don't have everything in scope here.
+            # Otherwise the same as regular AST node, but need to refer to the
+            # module it is defined in, and we don't have everything in scope here.
             if isinstance(x, ASTMarker):
                 raise TypeError(f"Cannot astify internal AST markers, got {unparse(x)}")
 
@@ -208,8 +329,7 @@ def astify(x, expander=None):  # like `macropy`'s `ast_repr`
             # name conflicts at the use site of `q[]`.
             fields = [ast.keyword(a, recurse(b)) for a, b in ast.iter_fields(x)]
             node = ast.Call(ast.Attribute(value=_mcpyrate_quotes_attr('ast'),
-                                          attr=x.__class__.__name__,
-                                          ctx=ast.Load()),
+                                          attr=x.__class__.__name__),
                             [],
                             fields)
             # Copy source location info for correct coverage reporting of a quoted block.
@@ -233,7 +353,7 @@ def astify(x, expander=None):  # like `macropy`'s `ast_repr`
 
 
 def unastify(tree):
-    """Inverse of `astify`.
+    """Quasiquote uncompiler. Inverse of `astify`.
 
     `tree` must have been produced by `astify`. Otherwise raises `TypeError`.
 
@@ -245,31 +365,27 @@ def unastify(tree):
     a value from outside the quote context into the quoted representation - so
     that the value actually becomes quoted! - whereas `unastify` inverts the
     quote operation.
+
+    Note also that `astify` compiles unquote commands into ASTs for calls to
+    the run-time parts of the unquote operators. That's what `unastify` sees.
+    We *could* detect those calls and uncompile them into AST markers, but we
+    currently don't.
+
+    The use case of `unastify` is second-order macros, to transform a quoted
+    AST at macro expansion time when the extra AST layer added by `astify` is
+    still present. The recipe is `unastify`, process just like any AST, then
+    quote again.
+
+    If you just want to macro-expand a quoted AST, see `expand` and `expand1`.
     """
     # CAUTION: in `unastify`, we implement only what we minimally need.
-    def attr_ast_to_dotted_name(tree):
-        # Input is like:
-        #     (mcpyrate.quotes).thing
-        #     ((mcpyrate.quotes).ast).thing
-        if type(tree) is not ast.Attribute:
-            raise TypeError
-        acc = []
-        def recurse(tree):
-            acc.append(tree.attr)
-            if type(tree.value) is ast.Attribute:
-                recurse(tree.value)
-            elif type(tree.value) is ast.Name:
-                acc.append(tree.value.id)
-            else:
-                raise NotImplementedError
-        recurse(tree)
-        return ".".join(reversed(acc))
-
     our_module_globals = globals()
     def lookup_thing(dotted_name):
         if not dotted_name.startswith("mcpyrate.quotes"):
             raise NotImplementedError
         path = dotted_name.split(".")
+        if not all(component.isidentifier() for component in path):
+            raise NotImplementedError
         if len(path) < 3:
             raise NotImplementedError
         name_of_thing = path[2]
@@ -302,7 +418,7 @@ def unastify(tree):
         return {unastify(elt) for elt in tree.elts}
 
     elif T is ast.Call:
-        dotted_name = attr_ast_to_dotted_name(tree.func)
+        dotted_name = unparse(tree.func)
         callee = lookup_thing(dotted_name)
         args = unastify(tree.args)
         kwargs = {k: v for k, v in unastify(tree.keywords)}
@@ -322,7 +438,7 @@ _quotelevel = NestingLevelTracker()
 def _unquote_expand(tree, expander):
     """Expand quasiquote macros in `tree`. If quotelevel is zero, expand all macros in `tree`."""
     if _quotelevel.value == 0:
-        tree = expander.visit_recursively(tree)  # result should be runnable, so always use recursive mode.
+        tree = expander.visit(tree)
     else:
         tree = _expand_quasiquotes(tree, expander)
 
@@ -342,7 +458,7 @@ def q(tree, *, syntax, expander, **kw):
         raise SyntaxError("`q` is an expr and block macro only")
     with _quotelevel.changed_by(+1):
         tree = _expand_quasiquotes(tree, expander)  # expand any inner quotes and unquotes first
-        tree = astify(tree, expander=expander)  # Magic part of `q`. Supply `expander` for `h[macro]` detection.
+        tree = astify(tree, expander)  # Magic part of `q`. Supply `expander` for `h[macro]` detection.
         ps = get_markers(tree, QuasiquoteMarker)  # postcondition: no remaining QuasiquoteMarkers
         if ps:
             assert False, f"QuasiquoteMarker instances remaining in output: {ps}"
@@ -350,7 +466,7 @@ def q(tree, *, syntax, expander, **kw):
             target = kw['optional_vars']  # List, Tuple, Name
             if type(target) is not ast.Name:
                 raise SyntaxError(f"expected a single asname, got {unparse(target)}")
-            # Note this `Assign` runs at the use site of `q`, it's not part of the quoted code section.
+            # Note this `Assign` runs at the use site of `q`, it's not part of the quoted code block.
             tree = ast.Assign([target], tree)  # Here `tree` is a List.
         return tree
 
@@ -366,45 +482,58 @@ def u(tree, *, syntax, expander, **kw):
         raise SyntaxError("`u` encountered while quotelevel < 1")
     with _quotelevel.changed_by(-1):
         _unquote_expand(tree, expander)
-        # We want to generate an AST that compiles to the *value* of `v`. But when
-        # this runs, it is too early. We must astify *at the use site*. So use an
-        # `ast.Call` to delay, and in there, splice in `tree` as-is.
-        return ASTLiteral(ast.Call(_mcpyrate_quotes_attr("astify"), [tree], []))
+        return Unquote(tree)
 
 
-def n(tree, *, syntax, **kw):
-    """[syntax, expr] name-unquote. Splice a string, lifted into a lexical identifier, into a quasiquote.
+def n(tree, *, syntax, expander, **kw):
+    """[syntax, expr] name-unquote. In a quasiquote, lift a string into a variable access.
 
-    The resulting node's `ctx` is filled in automatically by the macro expander later.
+    Examples::
+
+        `n["kitty"]` refers to the variable `kitty`,
+        `n[x]` refers to the variable whose name is taken from the variable `x` (at the use site of `q`),
+        `n["kitty.tail"]` refers to the attribute `tail` of the variable `kitty`,
+        `n["kitty." + x]` refers to an attribute of the variable `kitty`, where the attribute
+                          is determined by the value of the variable `x` at the use site of `q`.
+
+    Works with subscript expressions, too::
+
+        `n[f"kitties[{j}].paws[{k}].claws"]`
+
+    Any expression can be used, as long as it evaluates to a string containing
+    only valid identifiers and dots. This is checked when the use site of `q` runs.
+
+    The correct `ctx` for the use site is filled in automatically by the macro expander later.
     """
     if syntax != "expr":
         raise SyntaxError("`n` is an expr macro only")
     if _quotelevel.value < 1:
         raise SyntaxError("`n` encountered while quotelevel < 1")
     with _quotelevel.changed_by(-1):
-        return ASTLiteral(astify(ast.Name(id=ASTLiteral(tree))))
+        _unquote_expand(tree, expander)
+        return LiftIdentifier(tree)
 
 
-def a(tree, *, syntax, **kw):
+def a(tree, *, syntax, expander, **kw):
     """[syntax, expr] AST-unquote. Splice an AST into a quasiquote."""
     if syntax != "expr":
         raise SyntaxError("`a` is an expr macro only")
     if _quotelevel.value < 1:
         raise SyntaxError("`a` encountered while quotelevel < 1")
     with _quotelevel.changed_by(-1):
+        _unquote_expand(tree, expander)
         return ASTLiteral(tree)
 
 
-def s(tree, *, syntax, **kw):
+def s(tree, *, syntax, expander, **kw):
     """[syntax, expr] list-unquote. Splice a `list` of ASTs, as an `ast.List`, into a quasiquote."""
     if syntax != "expr":
         raise SyntaxError("`s` is an expr macro only")
     if _quotelevel.value < 1:
         raise SyntaxError("`s` encountered while quotelevel < 1")
-    return ASTLiteral(ast.Call(ast.Attribute(value=_mcpyrate_quotes_attr('ast'),
-                                             attr='List'),
-                               [],
-                               [ast.keyword("elts", tree)]))
+    with _quotelevel.changed_by(-1):
+        _unquote_expand(tree, expander)
+        return ASTList(tree)
 
 
 def h(tree, *, syntax, expander, **kw):
@@ -422,10 +551,8 @@ def h(tree, *, syntax, expander, **kw):
     Python process. (In other words, values from "macro expansion time
     last week" would not otherwise be available.)
 
-    Supports also macros. To hygienically splice a macro invocation, `h[]` only
-    the macro name. Macro captures are not pickled; they simply extend the bindings
-    of the expander (with a uniqified macro name) that is expanding the use site of
-    the surrounding `q`.
+    Supports also macros. To hygienically splice a macro invocation,
+    `h[]` only the macro name.
     """
     if syntax != "expr":
         raise SyntaxError("`h` is an expr macro only")
@@ -434,7 +561,7 @@ def h(tree, *, syntax, expander, **kw):
     with _quotelevel.changed_by(-1):
         name = unparse(tree)
         _unquote_expand(tree, expander)
-        return CaptureLater(tree, name)
+        return Capture(tree, name)
 
 # --------------------------------------------------------------------------------
 
@@ -518,6 +645,6 @@ def expand(tree, *, syntax, expander, **kw):
     tree = expander.visit_once(tree)  # make the quotes inside this invocation expand first; -> Done(body=...)
     # Always use recursive mode, because `expand[...]` may appear inside
     # another macro invocation that uses `visit_once` (which sets the expander
-    # mode to non-recursive for the dynamic extent of the visit).
+    # mode to non-recursive for the dynamic extent of the `visit_once`).
     tree = expander.visit_recursively(unastify(tree.body))  # On wrong kind of input, `unastify` will `TypeError` for us.
     return q(tree, syntax=syntax, expander=expander, **kw)

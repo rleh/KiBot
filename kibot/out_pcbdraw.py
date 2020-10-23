@@ -17,7 +17,7 @@ from .optionable import Optionable
 from .out_base import VariantOptions
 from .macros import macros, document, output_class  # noqa: F401
 from . import log
-from .mcpyrate.debug import macros, step_expansion
+from .mcpyrate.debug import macros, step_expansion  # noqa: F811,F401
 
 
 logger = log.get_logger(__name__)
@@ -305,4 +305,3 @@ class PcbDraw(BaseOutput):  # noqa: F821
             with document:
                 self.options = PcbDrawOptions
                 """ [dict] Options for the `pcbdraw` output """
-

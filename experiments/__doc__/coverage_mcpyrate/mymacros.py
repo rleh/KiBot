@@ -1,4 +1,6 @@
-from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, Load, Store, copy_location)
+from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, copy_location, walk)
+from mcpyrate.quotes import macros, q, u, n, a   # noqa: F401
+import mcpyrate  # noqa: F401
 
 
 def document(tree, **kw):
@@ -11,9 +13,9 @@ def document(tree, **kw):
     # Simplify it just to show the problem isn't related to the content of the macro
     # Note: This triggers another issue, Expr nodes can be optimized out if not assigned to a target
     # return tree
-    for n in range(len(tree)):
-        s = tree[n]
-        if not n:
+    for index in range(len(tree)):
+        s = tree[index]
+        if not index:
             prev = s
             continue
         # The whole sentence is a string?
@@ -42,16 +44,12 @@ def document(tree, **kw):
             elif isinstance(value, NameConstant) and isinstance(value.value, bool):
                 type_hint = '[boolean={}]'.format(str(value.value).lower())
             # Transform the string into an assign for _help_ID
-            if is_attr:
-                target = Attribute(value=Name(id='self', ctx=Load()), attr=doc_id, ctx=Store())
-            else:
-                target = Name(id=doc_id, ctx=Store())
-            help_str = s.value
-            help_str.s = type_hint+s.value.s
-            tree[n] = Assign(targets=[target], value=help_str)
-            # Copy the line number from the original docstring
-            copy_location(target, s)
-            copy_location(tree[n], s)
+            name = 'self.'+doc_id if is_attr else doc_id
+            with q as quoted:
+                n[name] = u[type_hint + s.value.s.rstrip()]
+            tree[index] = quoted[0]
+            for node in walk(tree[index]):
+                copy_location(node, s)
         prev = s
     # Return the modified AST
     return tree

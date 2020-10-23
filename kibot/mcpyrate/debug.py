@@ -55,7 +55,8 @@ def step_expansion(tree, *, args, syntax, expander, **kw):
     if syntax not in ("expr", "block"):
         raise SyntaxError("`step_expansion` is an expr and block macro only")
 
-    formatter = functools.partial(unparse_with_fallbacks, debug=True, color=True)
+    formatter = functools.partial(unparse_with_fallbacks, debug=True, color=True,
+                                  expander=expander)
     if args:
         if len(args) != 1:
             raise SyntaxError("expected `step_expansion` or `step_expansion['mode_str']`")
@@ -125,25 +126,16 @@ def show_bindings(tree, *, syntax, expander, **kw):
     """
     if syntax != "name":
         raise SyntaxError("`show_bindings` is an identifier macro only")
-    print(format_bindings(expander, color=True), file=stderr)
-    # Can't just delete the node (return None) if it's in an Expr(value=...).
-    #
-    # For correct coverage reporting, we can't return a `Constant`, because CPython
-    # optimizes away do-nothing constants. So trick the compiler into thinking
-    # this is important, by making the expansion result call a no-op function.
-    lam = ast.Lambda(args=ast.arguments(posonlyargs=[], args=[], vararg=None,
-                                        kwonlyargs=[], kw_defaults=[], kwarg=None,
-                                        defaults=[]),
-                     body=ast.Constant(value=None))
-    return ast.Call(func=lam, args=[], keywords=[])
+    print(format_bindings(expander, globals_too=False, color=True), file=stderr)
+    return None
 
 
-def format_bindings(expander, *, color=False):
+def format_bindings(expander, *, globals_too=False, color=False):
     """Return a human-readable report of the macro bindings currently seen by `expander`.
 
-    Global bindings (across all expanders) are also included.
+    If `globals_too=True`, global bindings (across all expanders) are also included.
 
-    If `color=True`, use `colorama` to colorize the output. (For terminals.)
+    If `color=True`, colorize the output for printing into a terminal.
 
     If you want to access them programmatically, just access `expander.bindings` directly.
     """
@@ -158,13 +150,14 @@ def format_bindings(expander, *, color=False):
 
     c, CS = maybe_setcolor, ColorScheme
 
+    bindings = expander.bindings if globals_too else expander.local_bindings
     with io.StringIO() as output:
         output.write(f"{c(CS.HEADING)}Macro bindings for {c(CS.SOURCEFILENAME)}{expander.filename}{c(CS.HEADING)}:{c(CS._RESET)}\n")
-        if not expander.bindings:
+        if not bindings:
             output.write(maybe_colorize("    <no bindings>\n",
                                         ColorScheme.GREYEDOUT))
         else:
-            for k, v in sorted(expander.bindings.items()):
+            for k, v in sorted(bindings.items()):
                 k = maybe_colorize(k, ColorScheme.MACROBINDING)
                 output.write(f"    {k}: {format_macrofunction(v)}\n")
         return output.getvalue()

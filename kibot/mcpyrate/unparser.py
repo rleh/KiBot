@@ -49,26 +49,35 @@ class Unparser:
     for the abstract syntax. Original formatting is disregarded.
     """
 
-    def __init__(self, tree, *, file=sys.stdout, debug=False, color=False):
+    def __init__(self, tree, *, file=sys.stdout,
+                 debug=False, color=False, expander=None):
         """Print the source for `tree` to `file`.
 
         `debug`: bool, print invisible nodes (`Module`, `Expr`).
+
+                 For statement nodes, print also line numbers (`lineno`
+                 attribute from the AST node).
 
                  The output is then not valid Python, but may better show
                  the problem when code produced by a macro mysteriously
                  fails to compile (even though a non-debug unparse looks ok).
 
-        `color`: bool, use Colorama to color output. For syntax highlighting
-                 when printing into a terminal.
+        `color`: bool, whether to use syntax highlighting. For terminal output.
+
+        `expander`: optional `BaseMacroExpander` instance. If provided,
+                    used for syntax highlighting macro names.
         """
         self.debug = debug
         self.color = color
-        self._color_override = False  # to syntax highlight decorators
+        self._color_override = False  # for syntax highlighting of decorators
+        self.expander = expander
         self.f = file
         self._indent = 0
         self.dispatch(tree)
         print("", file=self.f)
         self.f.flush()
+
+    # --------------------------------------------------------------------------------
 
     def maybe_colorize(self, text, *colors):
         "Colorize text if color is enabled."
@@ -78,7 +87,7 @@ class Unparser:
             return text
         return colorize(text, *colors)
 
-    def python_keyword(self, text):
+    def maybe_colorize_python_keyword(self, text):
         "Shorthand to colorize a language keyword such as `def`, `for`, ..."
         return self.maybe_colorize(text, ColorScheme.LANGUAGEKEYWORD)
 
@@ -87,7 +96,7 @@ class Unparser:
 
         Useful for syntax highlighting decorators (so that the method rendering
         the decorator may force a particular color, instead of allowing
-        auto-coloring based on the data in the decorator AST node).
+        auto-coloring based on the AST data).
         """
         @contextmanager
         def _nocolor():
@@ -99,8 +108,14 @@ class Unparser:
                 self._color_override = old_color_override
         return _nocolor()
 
+    # --------------------------------------------------------------------------------
+
     def fill(self, text="", *, lineno_node=None):
-        "Indent a piece of text, according to the current indentation level."
+        """Begin a new line, indent to the current level, then write `text`.
+
+        If in debug mode, then from `lineno_node`, get the `lineno` attribute
+        for printing the line number. Print `----` if `lineno` missing.
+        """
         self.write("\n")
         if self.debug and isinstance(lineno_node, ast.AST):
             lineno = lineno_node.lineno if hasattr(lineno_node, "lineno") else None
@@ -145,34 +160,73 @@ class Unparser:
     # --------------------------------------------------------------------------------
     # Unparsing methods
     #
-    # There should be one method per concrete grammar type.
-    # Constructors should be grouped by sum type. Ideally,
-    # this would follow the order in the grammar, but
-    # currently doesn't.
+    # Beside `astmarker`, which is a macro expander data-driven communication
+    # thing, there should be one method per concrete grammar type. Constructors
+    # should be grouped by sum type. Ideally, this would follow the order in
+    # the grammar, but currently doesn't.
+    #
+    # https://docs.python.org/3/library/ast.html#abstract-grammar
+    # https://greentreesnakes.readthedocs.io/en/latest/nodes.html
 
     def astmarker(self, tree):
-        def write_field_value(v):
+        def write_astmarker_field_value(v):
             if isinstance(v, ast.AST):
                 self.dispatch(v)
             else:
                 self.write(repr(v))
-        self.fill(self.maybe_colorize(f"$ASTMarker", ColorScheme.ASTMARKER),
-                  lineno_node=tree)  # markers cannot be eval'd
+
+        # Print like a statement or like an expression, depending on the
+        # content. The marker itself is neither. Prefix by a "$" to indicate
+        # that "source code" containing AST markers cannot be eval'd.
+        # If you need to get rid of them, see `mcpyrate.markers.delete_markers`.
+
+        header = self.maybe_colorize(f"$ASTMarker", ColorScheme.ASTMARKER)
+        if isinstance(tree.body, ast.stmt):
+            print_mode = "stmt"
+            self.fill(header, lineno_node=tree)
+        else:
+            print_mode = "expr"
+            self.write("(")
+            self.write(header)
+
         clsname = self.maybe_colorize(tree.__class__.__name__,
                                       ColorScheme.ASTMARKERCLASS)
         self.write(f"<{clsname}>")
+
         self.enter()
         self.write(" ")
         if len(tree._fields) == 1 and tree._fields[0] == "body":
-            write_field_value(tree.body)
+            # If there is just a single "body" field, don't bother with field names.
+            write_astmarker_field_value(tree.body)
         else:
-            for k, v in ast.iter_fields(tree):
-                self.fill(k)
-                self.enter()
-                self.write(" ")
-                write_field_value(v)
-                self.leave()
+            # The following is just a notation. There's no particular reason to
+            # use "k: v" syntax in statement mode and "k=v" in expression mode,
+            # except that it meshes well with the indentation rules and looks
+            # somewhat pythonic.
+            #
+            # In statement mode, a field may contain a statement; dispatching
+            # to a statement will begin a new line.
+            if print_mode == "stmt":
+                for k, v in ast.iter_fields(tree):
+                    self.fill(k, lineno_node=tree)
+                    self.enter()
+                    self.write(" ")
+                    write_astmarker_field_value(v)
+                    self.leave()
+            else:  # "expr"
+                first = True
+                for k, v in ast.iter_fields(tree):
+                    if first:
+                        first = False
+                    else:
+                        self.write(", ")
+                    self.write(f"{k}=")
+                    self.write("(")
+                    write_astmarker_field_value(v)
+                    self.write(")")
         self.leave()
+        if print_mode == "expr":
+            self.write(")")
 
     def _Module(self, t):
         # TODO: Python 3.8 type_ignores. Since we don't store the source text, maybe ignore that?
@@ -201,15 +255,15 @@ class Unparser:
             self.dispatch(t.value)
 
     def _Import(self, t):
-        self.fill(self.python_keyword("import "), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("import "), lineno_node=t)
         interleave(lambda: self.write(", "), self.dispatch, t.names)
 
     def _ImportFrom(self, t):
-        self.fill(self.python_keyword("from "), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("from "), lineno_node=t)
         self.write("." * t.level)
         if t.module:
             self.write(t.module)
-        self.write(self.python_keyword(" import "))
+        self.write(self.maybe_colorize_python_keyword(" import "))
         interleave(lambda: self.write(", "), self.dispatch, t.names)
 
     def _Assign(self, t):
@@ -240,42 +294,42 @@ class Unparser:
         self.dispatch(t.value)
 
     def _Return(self, t):
-        self.fill(self.python_keyword("return"), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("return"), lineno_node=t)
         if t.value:
             self.write(" ")
             self.dispatch(t.value)
 
     def _Pass(self, t):
-        self.fill(self.python_keyword("pass"), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("pass"), lineno_node=t)
 
     def _Break(self, t):
-        self.fill(self.python_keyword("break"), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("break"), lineno_node=t)
 
     def _Continue(self, t):
-        self.fill(self.python_keyword("continue"), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("continue"), lineno_node=t)
 
     def _Delete(self, t):
-        self.fill(self.python_keyword("del "), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("del "), lineno_node=t)
         interleave(lambda: self.write(", "), self.dispatch, t.targets)
 
     def _Assert(self, t):
-        self.fill(self.python_keyword("assert "), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("assert "), lineno_node=t)
         self.dispatch(t.test)
         if t.msg:
             self.write(", ")
             self.dispatch(t.msg)
 
     def _Global(self, t):
-        self.fill(self.python_keyword("global "), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("global "), lineno_node=t)
         interleave(lambda: self.write(", "), self.write, t.names)
 
     def _Nonlocal(self, t):
-        self.fill(self.python_keyword("nonlocal "), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("nonlocal "), lineno_node=t)
         interleave(lambda: self.write(", "), self.write, t.names)
 
     def _Await(self, t):  # expr
         self.write("(")
-        self.write(self.python_keyword("await"))
+        self.write(self.maybe_colorize_python_keyword("await"))
         if t.value:
             self.write(" ")
             self.dispatch(t.value)
@@ -283,7 +337,7 @@ class Unparser:
 
     def _Yield(self, t):  # expr
         self.write("(")
-        self.write(self.python_keyword("yield"))
+        self.write(self.maybe_colorize_python_keyword("yield"))
         if t.value:
             self.write(" ")
             self.dispatch(t.value)
@@ -291,48 +345,48 @@ class Unparser:
 
     def _YieldFrom(self, t):  # expr
         self.write("(")
-        self.write(self.python_keyword("yield from"))
+        self.write(self.maybe_colorize_python_keyword("yield from"))
         if t.value:
             self.write(" ")
             self.dispatch(t.value)
         self.write(")")
 
     def _Raise(self, t):
-        self.fill(self.python_keyword("raise"), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("raise"), lineno_node=t)
         if not t.exc:
             assert not t.cause
             return
         self.write(" ")
         self.dispatch(t.exc)
         if t.cause:
-            self.write(self.python_keyword(" from "))
+            self.write(self.maybe_colorize_python_keyword(" from "))
             self.dispatch(t.cause)
 
     def _Try(self, t):
-        self.fill(self.python_keyword("try"), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("try"), lineno_node=t)
         self.enter()
         self.dispatch(t.body)
         self.leave()
         for ex in t.handlers:
             self.dispatch(ex)
         if t.orelse:
-            self.fill(self.python_keyword("else"))
+            self.fill(self.maybe_colorize_python_keyword("else"))
             self.enter()
             self.dispatch(t.orelse)
             self.leave()
         if t.finalbody:
-            self.fill(self.python_keyword("finally"))
+            self.fill(self.maybe_colorize_python_keyword("finally"))
             self.enter()
             self.dispatch(t.finalbody)
             self.leave()
 
     def _ExceptHandler(self, t):
-        self.fill(self.python_keyword("except"), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("except"), lineno_node=t)
         if t.type:
             self.write(" ")
             self.dispatch(t.type)
         if t.name:
-            self.write(self.python_keyword(" as "))
+            self.write(self.maybe_colorize_python_keyword(" as "))
             self.write(t.name)
         self.enter()
         self.dispatch(t.body)
@@ -349,7 +403,7 @@ class Unparser:
                 self.dispatch(deco)
             self.write(ColorScheme._RESET)
 
-        class_str = (self.python_keyword("class ") +
+        class_str = (self.maybe_colorize_python_keyword("class ") +
                      self.maybe_colorize(t.name, ColorScheme.DEFNAME))
         self.fill(class_str, lineno_node=t)
         self.write("(")
@@ -389,7 +443,7 @@ class Unparser:
                 self.dispatch(deco)
             self.write(ColorScheme._RESET)
 
-        def_str = (self.python_keyword(fill_suffix) +
+        def_str = (self.maybe_colorize_python_keyword(fill_suffix) +
                    " " + self.maybe_colorize(t.name, ColorScheme.DEFNAME) + "(")
         self.fill(def_str, lineno_node=t)
         self.dispatch(t.args)
@@ -403,28 +457,28 @@ class Unparser:
         # TODO: Python 3.8 type_comment, ignore it?
 
     def _For(self, t):
-        self.__For_helper(self.python_keyword("for "), t)
+        self.__For_helper(self.maybe_colorize_python_keyword("for "), t)
 
     def _AsyncFor(self, t):
-        self.__For_helper(self.python_keyword("async for "), t)
+        self.__For_helper(self.maybe_colorize_python_keyword("async for "), t)
 
     def __For_helper(self, fill, t):
         self.fill(fill, lineno_node=t)
         self.dispatch(t.target)
-        self.write(self.python_keyword(" in "))
+        self.write(self.maybe_colorize_python_keyword(" in "))
         self.dispatch(t.iter)
         self.enter()
         self.dispatch(t.body)
         self.leave()
         if t.orelse:
-            self.fill(self.python_keyword("else"))
+            self.fill(self.maybe_colorize_python_keyword("else"))
             self.enter()
             self.dispatch(t.orelse)
             self.leave()
         # TODO: Python 3.8 type_comment, ignore it?
 
     def _If(self, t):
-        self.fill(self.python_keyword("if "), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("if "), lineno_node=t)
         self.dispatch(t.test)
         self.enter()
         self.dispatch(t.body)
@@ -433,32 +487,32 @@ class Unparser:
         while (t.orelse and len(t.orelse) == 1 and
                isinstance(t.orelse[0], ast.If)):
             t = t.orelse[0]
-            self.fill(self.python_keyword("elif "))
+            self.fill(self.maybe_colorize_python_keyword("elif "))
             self.dispatch(t.test)
             self.enter()
             self.dispatch(t.body)
             self.leave()
         # final else
         if t.orelse:
-            self.fill(self.python_keyword("else"))
+            self.fill(self.maybe_colorize_python_keyword("else"))
             self.enter()
             self.dispatch(t.orelse)
             self.leave()
 
     def _While(self, t):
-        self.fill(self.python_keyword("while "), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("while "), lineno_node=t)
         self.dispatch(t.test)
         self.enter()
         self.dispatch(t.body)
         self.leave()
         if t.orelse:
-            self.fill(self.python_keyword("else"))
+            self.fill(self.maybe_colorize_python_keyword("else"))
             self.enter()
             self.dispatch(t.orelse)
             self.leave()
 
     def _With(self, t):
-        self.fill(self.python_keyword("with "), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("with "), lineno_node=t)
         interleave(lambda: self.write(", "), self.dispatch, t.items)
         self.enter()
         self.dispatch(t.body)
@@ -466,7 +520,7 @@ class Unparser:
         # TODO: Python 3.8 type_comment, ignore it?
 
     def _AsyncWith(self, t):
-        self.fill(self.python_keyword("async with "), lineno_node=t)
+        self.fill(self.maybe_colorize_python_keyword("async with "), lineno_node=t)
         interleave(lambda: self.write(", "), self.dispatch, t.items)
         self.enter()
         self.dispatch(t.body)
@@ -511,6 +565,8 @@ class Unparser:
             v = self.maybe_colorize(v, ColorScheme.BUILTINEXCEPTION)
         elif v in builtin_others:
             v = self.maybe_colorize(v, ColorScheme.BUILTINOTHER)
+        elif self.expander and self.expander.isbound(v):
+            v = self.maybe_colorize(v, ColorScheme.MACRONAME)
         self.write(v)
 
     def _NameConstant(self, t):  # up to Python 3.7
@@ -558,21 +614,21 @@ class Unparser:
 
     def _comprehension(self, t):
         if t.is_async:
-            self.write(self.python_keyword(" async"))
-        self.write(self.python_keyword(" for "))
+            self.write(self.maybe_colorize_python_keyword(" async"))
+        self.write(self.maybe_colorize_python_keyword(" for "))
         self.dispatch(t.target)
-        self.write(self.python_keyword(" in "))
+        self.write(self.maybe_colorize_python_keyword(" in "))
         self.dispatch(t.iter)
         for if_clause in t.ifs:
-            self.write(self.python_keyword(" if "))
+            self.write(self.maybe_colorize_python_keyword(" if "))
             self.dispatch(if_clause)
 
     def _IfExp(self, t):
         self.write("(")
         self.dispatch(t.body)
-        self.write(self.python_keyword(" if "))
+        self.write(self.maybe_colorize_python_keyword(" if "))
         self.dispatch(t.test)
-        self.write(self.python_keyword(" else "))
+        self.write(self.maybe_colorize_python_keyword(" else "))
         self.dispatch(t.orelse)
         self.write(")")
 
@@ -633,7 +689,7 @@ class Unparser:
     boolops = {ast.And: 'and', ast.Or: 'or'}
     def _BoolOp(self, t):
         self.write("(")
-        s = self.python_keyword(self.boolops[t.op.__class__])
+        s = self.maybe_colorize_python_keyword(self.boolops[t.op.__class__])
         s = f" {s} "
         interleave(lambda: self.write(s), self.dispatch, t.values)
         self.write(")")
@@ -766,13 +822,13 @@ class Unparser:
         if hasattr(t, "posonlyargs"):
             args_sets = [t.posonlyargs, t.args]
             defaults_sets = [defaults[:nposonlyargs], defaults[nposonlyargs:]]
-            set_separator = ', /'
         else:
             args_sets = [t.args]
             defaults_sets = [defaults]
-            set_separator = ''
 
-        for args, defaults in zip(args_sets, defaults_sets):
+        def write_arg_default_pairs(data):
+            nonlocal first
+            args, defaults = data
             for a, d in zip(args, defaults):
                 if first:
                     first = False
@@ -782,7 +838,14 @@ class Unparser:
                 if d:
                     self.write("=")
                     self.dispatch(d)
-            self.write(set_separator)
+
+        def maybe_separate_positional_only_args():
+            if not first:
+                self.write(', /')
+
+        interleave(maybe_separate_positional_only_args,
+                   write_arg_default_pairs,
+                   zip(args_sets, defaults_sets))
 
         # varargs, or bare '*' if no varargs but keyword-only arguments present
         if t.vararg or t.kwonlyargs:
@@ -830,7 +893,16 @@ class Unparser:
 
     def _Lambda(self, t):
         self.write("(")
-        self.write(self.python_keyword("lambda "))
+        self.write(self.maybe_colorize_python_keyword("lambda"))
+
+        def takes_arguments(lam):
+            a = lam.args
+            if hasattr(a, "posonlyargs") and a.posonlyargs:
+                return True
+            return a.args or a.vararg or a.kwonlyargs or a.kwarg
+        if takes_arguments(t):
+            self.write(" ")
+
         self.dispatch(t.args)
         self.write(": ")
         self.dispatch(t.body)
@@ -839,29 +911,29 @@ class Unparser:
     def _alias(self, t):
         self.write(t.name)
         if t.asname:
-            self.write(self.python_keyword(" as ") + t.asname)
+            self.write(self.maybe_colorize_python_keyword(" as ") + t.asname)
 
     def _withitem(self, t):
         self.dispatch(t.context_expr)
         if t.optional_vars:
-            self.write(self.python_keyword(" as "))
+            self.write(self.maybe_colorize_python_keyword(" as "))
             self.dispatch(t.optional_vars)
 
 
-def unparse(tree, *, debug=False, color=False):
+def unparse(tree, *, debug=False, color=False, expander=None):
     """Convert the AST `tree` into source code. Return the code as a string.
 
     `debug`: bool, print invisible nodes (`Module`, `Expr`).
 
              The output is then not valid Python, but may better show
              the problem when code produced by a macro mysteriously
-             fails to compile (even though the unparse looks ok).
+             fails to compile (even though a non-debug unparse looks ok).
 
     Upon invalid input, raises `UnparserError`.
     """
     try:
         with io.StringIO() as output:
-            Unparser(tree, file=output, debug=debug, color=color)
+            Unparser(tree, file=output, debug=debug, color=color, expander=expander)
             code = output.getvalue().strip()
         return code
     except UnparserError as err:  # fall back to an AST dump
@@ -877,7 +949,7 @@ def unparse(tree, *, debug=False, color=False):
             raise UnparserError(msg) from err
 
 
-def unparse_with_fallbacks(tree, *, debug=False, color=False):
+def unparse_with_fallbacks(tree, *, debug=False, color=False, expander=None):
     """Like `unparse`, but upon error, don't raise; return the error message.
 
     Usually you'll want the exception to be raised. This is mainly useful to
@@ -886,9 +958,9 @@ def unparse_with_fallbacks(tree, *, debug=False, color=False):
     at the receiving end.
     """
     try:
-        text = unparse(tree, debug=debug, color=color)
+        text = unparse(tree, debug=debug, color=color, expander=expander)
     except UnparserError as err:
-        text = err.args[0]
+        text = str(err)
     except Exception as err:
         # This can only happen if there is a bug in the unparser, but we don't
         # want to lose the macro use site filename and line number if this

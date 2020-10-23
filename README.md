@@ -640,7 +640,7 @@ Next time you need this list just use an alias, like this:
                         A short-cut to use for simple cases where a variant is an overkill.
         - `drill_marks`: [string='full'] what to use to indicate the drill places, can be none, small or full (for real scale).
         - `exclude_edge_layer`: [boolean=true] do not include the PCB edge layer.
-        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen.
+        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen (KiCad 5.x only).
         - `force_plot_invisible_refs_vals`: [boolean=false] include references and values even when they are marked as invisible.
         - `metric_units`: [boolean=false] use mm instead of inches.
         - `output`: [string='%f-%i%v.%x'] output file name, the default KiCad name if empty. Affected by global options.
@@ -724,7 +724,7 @@ Next time you need this list just use an alias, like this:
         - `dnf_filter`: [string|list(string)=''] Name of the filter to mark components as not fitted.
                         A short-cut to use for simple cases where a variant is an overkill.
         - `exclude_edge_layer`: [boolean=true] do not include the PCB edge layer.
-        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen.
+        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen (KiCad 5.x only).
         - `force_plot_invisible_refs_vals`: [boolean=false] include references and values even when they are marked as invisible.
         - `gerber_job_file`: [string='%f-%i%v.%x'] name for the gerber job file (%i='job', %x='gbrjob'). Affected by global options.
         - `gerber_precision`: [number=4.6] this the gerber coordinate format, can be 4.5 or 4.6.
@@ -761,7 +761,7 @@ Next time you need this list just use an alias, like this:
                         A short-cut to use for simple cases where a variant is an overkill.
         - `drill_marks`: [string='full'] what to use to indicate the drill places, can be none, small or full (for real scale).
         - `exclude_edge_layer`: [boolean=true] do not include the PCB edge layer.
-        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen.
+        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen (KiCad 5.x only).
         - `force_plot_invisible_refs_vals`: [boolean=false] include references and values even when they are marked as invisible.
         - `mirror_plot`: [boolean=false] plot mirrored.
         - `output`: [string='%f-%i%v.%x'] output file name, the default KiCad name if empty. Affected by global options.
@@ -981,7 +981,7 @@ Next time you need this list just use an alias, like this:
                     A short-cut to use for simple cases where a variant is an overkill.
     - `drill_marks`: [string='full'] what to use to indicate the drill places, can be none, small or full (for real scale).
     - `exclude_edge_layer`: [boolean=true] do not include the PCB edge layer.
-    - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen.
+    - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen (KiCad 5.x only).
     - `force_plot_invisible_refs_vals`: [boolean=false] include references and values even when they are marked as invisible.
     - `layers`: [list(dict)|list(string)|string] [all,selected,copper,technical,user]
                 List of PCB layers to plot.
@@ -996,7 +996,7 @@ Next time you need this list just use an alias, like this:
                         A short-cut to use for simple cases where a variant is an overkill.
         - `drill_marks`: [string='full'] what to use to indicate the drill places, can be none, small or full (for real scale).
         - `exclude_edge_layer`: [boolean=true] do not include the PCB edge layer.
-        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen.
+        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen (KiCad 5.x only).
         - `force_plot_invisible_refs_vals`: [boolean=false] include references and values even when they are marked as invisible.
         - `line_width`: [number=0.1] [0.02,2] for objects without width [mm].
         - `mirror_plot`: [boolean=false] plot mirrored.
@@ -1100,7 +1100,7 @@ Next time you need this list just use an alias, like this:
                         A short-cut to use for simple cases where a variant is an overkill.
         - `drill_marks`: [string='full'] what to use to indicate the drill places, can be none, small or full (for real scale).
         - `exclude_edge_layer`: [boolean=true] do not include the PCB edge layer.
-        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen.
+        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen (KiCad 5.x only).
         - `force_plot_invisible_refs_vals`: [boolean=false] include references and values even when they are marked as invisible.
         - `line_width`: [number=0.15] [0.02,2] for objects without width [mm].
         - `mirror_plot`: [boolean=false] plot mirrored.
@@ -1176,7 +1176,7 @@ Next time you need this list just use an alias, like this:
                         A short-cut to use for simple cases where a variant is an overkill.
         - `drill_marks`: [string='full'] what to use to indicate the drill places, can be none, small or full (for real scale).
         - `exclude_edge_layer`: [boolean=true] do not include the PCB edge layer.
-        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen.
+        - `exclude_pads_from_silkscreen`: [boolean=false] do not plot the component pads in the silk screen (KiCad 5.x only).
         - `force_plot_invisible_refs_vals`: [boolean=false] include references and values even when they are marked as invisible.
         - `line_width`: [number=0.25] [0.02,2] for objects without width [mm].
         - `mirror_plot`: [boolean=false] plot mirrored.

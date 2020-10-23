@@ -8,9 +8,10 @@ Macros to make the output plug-ins cleaner.
 """
 from .gs import GS  # noqa: F401
 from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, Load, Store, UnaryOp, USub,
-                 ClassDef, Call, ImportFrom, copy_location, alias, walk)
+                 ClassDef, copy_location, walk)
 from .mcpyrate import unparse
 from .mcpyrate.quotes import macros, q, u, n, a  # noqa: F401
+from .mcpyrate.splicing import splice_statements
 from . import mcpyrate  # noqa: F401
 
 
@@ -101,16 +102,15 @@ def document(sentences, **kw):
 
 def _do_wrap_class_register(tree, mod, base_class):
     if isinstance(tree, ClassDef):
-        # Create the register call
-        name = tree.name
-        reg_name = name.lower()
-        # BaseOutput.register member:
-        attr = Attribute(value=Name(id=base_class, ctx=Load()), attr='register', ctx=Load())
-        # Function call to it passing reg_name and name
-        do_register = Expr(value=Call(func=attr, args=[Str(s=reg_name), Name(id=name, ctx=Load())], keywords=[]))
-        # Create the import
-        do_import = ImportFrom(module=mod, names=[alias(name=base_class, asname=None)], level=1)
-        return [do_import, tree, do_register]
+        with q as do_wrap:
+            # Import using a function call
+            _temp = __import__(u[mod], globals(), locals(), [u[base_class]], 1)
+            n[base_class] = n['_temp.'+base_class]
+            __paste_here__  # noqa: F821
+            # Register it
+            n[base_class].register(u[tree.name.lower()], n[tree.name])
+        splice_statements(tree, do_wrap)  # Put tree on the __paste_here__ point
+        return do_wrap
     # Just in case somebody applies it to anything other than a class
     return tree  # pragma: no cover
 

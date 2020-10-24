@@ -187,7 +187,7 @@ class BaseMacroExpander(NodeTransformer):
         except Exception:
             output_type_ok = False
         if not output_type_ok:
-            reason = f"expected macro to return AST, iterable or None; got {type(expansion)} with value {repr(expansion)}"
+            reason = f"expected macro to return AST node, iterable of AST nodes, or None; got {type(expansion)} with value {repr(expansion)}"
             msg = f"{loc}\n{reason}"
             raise MacroExpansionError(msg)
 
@@ -204,7 +204,7 @@ class BaseMacroExpander(NodeTransformer):
         '''
         if expansion is not None:
             expansion = fix_locations(expansion, target, mode="reference")
-            expansion = fix_ctx(expansion)
+            expansion = fix_ctx(expansion, copy_seen_nodes=False)
             if self.recursive:
                 expansion = self.visit(expansion)
 
@@ -238,5 +238,5 @@ def global_postprocess(tree):
     # A name macro, appearing as an assignment target, gets the wrong ctx,
     # because when expanding the name macro, the expander sees only the Name
     # node, and thus puts an `ast.Load` there as the ctx.
-    tree = fix_ctx(tree)
+    tree = fix_ctx(tree, copy_seen_nodes=True)
     return tree

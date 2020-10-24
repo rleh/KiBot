@@ -1,4 +1,4 @@
-from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, copy_location, walk)
+from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant)
 from mcpyrate.quotes import macros, q, u, n, a   # noqa: F401
 from mcpyrate.astfixers import fix_locations
 import mcpyrate  # noqa: F401

@@ -8,10 +8,9 @@ Macros to make the output plug-ins cleaner.
 """
 from .gs import GS  # noqa: F401
 from ast import (Assign, Name, Attribute, Expr, Num, Str, NameConstant, Load, Store, UnaryOp, USub,
-                 ClassDef, copy_location, walk)
+                 ClassDef, copy_location)
 from .mcpyrate import unparse
 from .mcpyrate.quotes import macros, q, u, n, a  # noqa: F401
-from .mcpyrate.splicing import splice_statements
 from .mcpyrate.astfixers import fix_locations
 from . import mcpyrate  # noqa: F401
 
@@ -106,10 +105,10 @@ def _do_wrap_class_register(tree, mod, base_class):
             # Import using a function call
             _temp = __import__(u[mod], globals(), locals(), [u[base_class]], 1)
             n[base_class] = n['_temp.'+base_class]
-            __paste_here__  # noqa: F821
+            with a:
+                tree
             # Register it
             n[base_class].register(u[tree.name.lower()], n[tree.name])
-        splice_statements(tree, do_wrap)  # Put tree on the __paste_here__ point
         return do_wrap
     # Just in case somebody applies it to anything other than a class
     return tree  # pragma: no cover

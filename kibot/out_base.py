@@ -286,6 +286,38 @@ class VariantOptions(BaseOptions):
         for gi in self.old_badhes:
             gi.SetLayer(self.badhes)
 
+    def remove_fab(self, board, comps_hash):
+        """ Remove from Fab the excluded components. """
+        ffab = board.GetLayerID('F.Fab')
+        bfab = board.GetLayerID('B.Fab')
+        old_ffab = []
+        old_bfab = []
+        rescue = board.GetLayerID('Rescue')
+        for m in board.GetModules():
+            ref = m.GetReference()
+            c = comps_hash.get(ref, None)
+            if not c.included:
+                # Remove any graphical item in the *.Fab layers
+                for gi in m.GraphicalItems():
+                    l_gi = gi.GetLayer()
+                    if l_gi == ffab:
+                        gi.SetLayer(rescue)
+                        old_ffab.append(gi)
+                    if l_gi == bfab:
+                        gi.SetLayer(rescue)
+                        old_bfab.append(gi)
+        # Store the data to undo the above actions
+        self.old_ffab = old_ffab
+        self.old_bfab = old_bfab
+        self.ffab = ffab
+        self.bfab = bfab
+
+    def restore_fab(self, board, comps_hash):
+        for gi in self.old_ffab:
+            gi.SetLayer(self.ffab)
+        for gi in self.old_bfab:
+            gi.SetLayer(self.bfab)
+
     def run(self, output_dir):
         """ Makes the list of components available """
         if not self.dnf_filter and not self.variant:

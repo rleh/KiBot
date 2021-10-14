@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - skip_bottom: bottom components aren't rotated.
 - XLSX BoM: option to control the logo scale (#84)
 - Import mechanism for filters and variants (#88)
+- PDF PCB Print: option `hide_excluded` to hide components marked by the
+  `exclude_filter`.
+  https://forum.kicad.info/t/fab-drawing-for-only-through-hole-parts/
 - Internal BoM: option to avoid merging components with empty fields.
   Is named `merge_both_blank` and defaults to true.
 - Internal BoM: when a `Value` field can't be interpreted as a `number+unit`,

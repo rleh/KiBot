@@ -41,6 +41,8 @@ class PDF_Pcb_PrintOptions(VariantOptions):
             """ Print layers in separated pages """
             self.mirror = False
             """ Print mirrored (X axis inverted). ONLY for KiCad 6 """
+            self.hide_excluded = False
+            """ Hide components in the Fab layer that are marked as excluded by a variant """
         super().__init__()
         self._expand_ext = 'pdf'
 
@@ -75,6 +77,8 @@ class PDF_Pcb_PrintOptions(VariantOptions):
         comps_hash = self.get_refs_hash()
         self.cross_modules(board, comps_hash)
         self.remove_paste_and_glue(board, comps_hash)
+        if self.hide_excluded:
+            self.remove_fab(board, comps_hash)
         # Save the PCB to a temporal file
         with NamedTemporaryFile(mode='w', suffix='.kicad_pcb', delete=False) as f:
             fname = f.name
@@ -84,6 +88,8 @@ class PDF_Pcb_PrintOptions(VariantOptions):
         fproj = self._copy_project(fname)
         self.uncross_modules(board, comps_hash)
         self.restore_paste_and_glue(board, comps_hash)
+        if self.hide_excluded:
+            self.restore_fab(board, comps_hash)
         return fname, fproj
 
     def get_targets(self, out_dir):

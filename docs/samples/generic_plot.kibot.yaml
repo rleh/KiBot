@@ -879,6 +879,8 @@ outputs:
       dnf_filter: ''
       # [string='full'] What to use to indicate the drill places, can be none, small or full (for real scale)
       drill_marks: 'full'
+      # [boolean=false] Hide components in the Fab layer that are marked as excluded by a variant
+      hide_excluded: false
       # [boolean=false] Print mirrored (X axis inverted). ONLY for KiCad 6
       mirror: false
       # [boolean=false] Print in black and white

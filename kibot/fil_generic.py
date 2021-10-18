@@ -124,6 +124,10 @@ class Generic(BaseFilter):  # noqa: F821
             if reg.skip_if_no_field and not c.is_field(reg.column):
                 # Skip the check if the field doesn't exist
                 continue
+            if reg.match_if_field and c.is_field(reg.column):
+                return True
+            if reg.match_if_no_field and not c.is_field(reg.column):
+                return True
             field_value = c.get_field_value(reg.column)
             res = reg.regex.search(field_value)
             if reg.invert:
@@ -145,6 +149,10 @@ class Generic(BaseFilter):  # noqa: F821
             if reg.skip_if_no_field and not c.is_field(reg.column):
                 # Skip the check if the field doesn't exist
                 continue
+            if reg.match_if_field and c.is_field(reg.column):
+                return True
+            if reg.match_if_no_field and not c.is_field(reg.column):
+                return True
             field_value = c.get_field_value(reg.column)
             res = reg.regex.search(field_value)
             if reg.invert:

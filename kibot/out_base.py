@@ -104,6 +104,10 @@ class BoMRegex(Optionable):
             """ {regex} """
             self.skip_if_no_field = False
             """ Skip this test if the field doesn't exist """
+            self.match_if_field = False
+            """ Match if the field exists, no regex applied. Not affected by `invert` """
+            self.match_if_no_field = False
+            """ Match if the field doesn't exists, no regex applied. Not affected by `invert` """
             self.invert = False
             """ Invert the regex match result """
 

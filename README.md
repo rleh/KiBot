@@ -305,6 +305,8 @@ Currently the only type available is `generic`.
         - `column`: [string=''] Name of the column to apply the regular expression.
         - *field*: Alias for column.
         - `invert`: [boolean=false] Invert the regex match result.
+        - `match_if_field`: [boolean=false] Match if the field exists, no regex applied. Not affected by `invert`.
+        - `match_if_no_field`: [boolean=false] Match if the field doesn't exists, no regex applied. Not affected by `invert`.
         - `regex`: [string=''] Regular expression to match.
         - *regexp*: Alias for regex.
         - `skip_if_no_field`: [boolean=false] Skip this test if the field doesn't exist.
@@ -326,6 +328,8 @@ Currently the only type available is `generic`.
         - `column`: [string=''] Name of the column to apply the regular expression.
         - *field*: Alias for column.
         - `invert`: [boolean=false] Invert the regex match result.
+        - `match_if_field`: [boolean=false] Match if the field exists, no regex applied. Not affected by `invert`.
+        - `match_if_no_field`: [boolean=false] Match if the field doesn't exists, no regex applied. Not affected by `invert`.
         - `regex`: [string=''] Regular expression to match.
         - *regexp*: Alias for regex.
         - `skip_if_no_field`: [boolean=false] Skip this test if the field doesn't exist.

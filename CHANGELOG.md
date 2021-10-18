@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Internal BoM: when a `Value` field can't be interpreted as a `number+unit`,
   and it contain at least one space, now we try to use the text before the
   space. This helps for cases like "10K 1%".
+- Generic filter: options to match if a field is/isn't defined.
 
 ### Changed
 - Internal BoM: now components with different Tolerance, Voltage, Current

@@ -31,6 +31,8 @@ jobs:
         submodules: recursive
     - name: Install dependencies
       run: |
+        apt-get update
+        apt-get -y install --no-install-recommends python3-inflection python3-requests python3-urllib3 python3-six python3-certifi python3-setuptools python3-openssl python3-tldextract python3-dateutil python3-pip python3-wheel
         pip3 install git+https://github.com/set-soft/kicost-digikey-api-v3.git
     - name: Lint with flake8
       run: |

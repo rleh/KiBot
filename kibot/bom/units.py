@@ -43,6 +43,12 @@ UNIT_ALL = UNIT_R + UNIT_C + UNIT_L
 match = None
 # Current locale decimal point value
 decimal_point = None
+# Last warning
+last_warning = ''
+
+
+def get_last_warning():
+    return last_warning
 
 
 def get_unit(unit, ref_prefix):
@@ -98,12 +104,13 @@ def match_string():
     return r"(\d*\.?\d*)\s*(" + group_string(PREFIX_ALL) + ")*(" + group_string(UNIT_ALL) + r")*(\d*)$"
 
 
-def comp_match(component, ref_prefix):
+def comp_match(component, ref_prefix, ref=None):
     """
     Return a normalized value and units for a given component value string
     e.g. comp_match('10R2') returns (10, R)
     e.g. comp_match('3.3mOhm') returns (0.0033, R)
     """
+    global last_warning
     original = component
     # Remove useless spaces
     component = component.strip()
@@ -130,14 +137,17 @@ def comp_match(component, ref_prefix):
         # Ignore case
         match = re.compile(match_string(), flags=re.IGNORECASE)
 
+    where = ' in {}'.format(ref) if ref is not None else ''
     result = match.match(component)
     if not result:
-        logger.warning(W_BADVAL1 + "Malformed value: `{}` (no match)".format(original))
+        last_warning = W_BADVAL1
+        logger.warning(W_BADVAL1 + "Malformed value: `{}` (no match{})".format(original, where))
         return None
 
     value, prefix, units, post = result.groups()
     if value == '.':
-        logger.warning(W_BADVAL2 + "Malformed value: `{}` (reduced to decimal point)".format(original))
+        last_warning = W_BADVAL2
+        logger.warning(W_BADVAL2 + "Malformed value: `{}` (reduced to decimal point{})".format(original, where))
         return None
     if value == '':
         value = '0'
@@ -148,7 +158,8 @@ def comp_match(component, ref_prefix):
     # We will also have a trailing number
     if post:
         if "." in value:
-            logger.warning(W_BADVAL3 + "Malformed value: `{}` (unit split, but contains decimal point)".format(original))
+            last_warning = W_BADVAL3
+            logger.warning(W_BADVAL3 + "Malformed value: `{}` (unit split, but contains decimal point)".format(original, where))
             return None
         value = float(value)
         postValue = float(post) / (10 ** len(post))

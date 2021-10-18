@@ -12,10 +12,10 @@ All the logic to convert a list of components into the rows and columns used to 
 import locale
 from copy import deepcopy
 from math import ceil
-from .units import compare_values, comp_match
+from .units import compare_values, comp_match, get_last_warning
 from .bom_writer import write_bom
 from .columnlist import ColumnList
-from ..misc import DNF, W_FIELDCONF
+from ..misc import DNF, W_FIELDCONF, W_BADVAL1
 from .. import log
 
 logger = log.get_logger(__name__)
@@ -403,7 +403,14 @@ def group_components(cfg, components):
             continue
         # Cache the value used to sort
         if c.ref_prefix in RLC_PREFIX and c.value.lower() not in DNF:
-            c.value_sort = comp_match(c.value, c.ref_prefix)
+            c.value_sort = comp_match(c.value, c.ref_prefix, c.ref)
+            if c.value_sort is None and (' ' in c.value):
+                # Try with the data before a space
+                value = c.value.split(' ')[0]
+                value_sort = comp_match(value, c.ref_prefix)
+                if value_sort is not None:
+                    c.value_sort = value_sort
+                    logger.warning(get_last_warning() + "Using `{}` for {} instead".format(value, c.ref))
         else:
             c.value_sort = None
         # Try to add the component to an existing group

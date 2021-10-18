@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Import mechanism for filters and variants (#88)
 - Internal BoM: option to avoid merging components with empty fields.
   Is named `merge_both_blank` and defaults to true.
+- Internal BoM: when a `Value` field can't be interpreted as a `number+unit`,
+  and it contain at least one space, now we try to use the text before the
+  space. This helps for cases like "10K 1%".
 
 ### Changed
 - Internal BoM: now components with different Tolerance, Voltage, Current

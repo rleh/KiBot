@@ -70,6 +70,9 @@ def compare_field(c1, c2, field, cfg):
     # If blank comparisons are allowed
     if (c1_value == "" or c2_value == "") and cfg.merge_blank_fields:
         return True
+    if not cfg.merge_blank_fields and c1_value == "" and c2_value == "":
+        # Avoid merging two components with empty field
+        return False
     return c1_value == c2_value
 
 

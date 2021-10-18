@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Can be disabled to use absolute coordinates. (#87)
 - Board View: flipped output. (#89)
 - Board View: problems with netnames using spaces. (#90)
+- Internal BoM: When `merge_blank_fields` is disabled and we compare two empty
+  fields now we avoid a match. So we don't group undefined components.
+
 
 ## [0.11.0] - 2021-04-25
 ### Added

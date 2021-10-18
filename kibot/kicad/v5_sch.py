@@ -18,7 +18,7 @@ from .config import KiConf, un_quote
 from ..gs import GS
 from ..misc import (W_BADPOLI, W_POLICOORDS, W_BADSQUARE, W_BADCIRCLE, W_BADARC, W_BADTEXT, W_BADPIN, W_BADCOMP, W_BADDRAW,
                     W_UNKDCM, W_UNKAR, W_ARNOPATH, W_ARNOREF, W_MISCFLD, W_EXTRASPC, W_NOLIB, W_INCPOS, W_NOANNO, W_MISSLIB,
-                    W_MISSDCM, W_MISSCMP, W_MISFLDNAME)
+                    W_MISSDCM, W_MISSCMP, W_MISFLDNAME, W_NOENDLIB)
 from .. import log
 
 logger = log.get_logger(__name__)
@@ -510,6 +510,10 @@ class LibComponent(object):
         self.draw = []
         line = f.get_line()
         while not line.startswith('ENDDEF'):
+            if len(line) == 0:
+                # Skip empty lines
+                line = f.get_line()
+                continue
             if line[0] == 'F':
                 # A field
                 field = LibComponentField.parse(line, lib_name, f)
@@ -655,7 +659,11 @@ class SymLib(object):
                                     self.alias[a] = o
                 else:
                     raise SchLibError('Unknown library entry', line, f)
-                line = f.get_line()
+                try:
+                    line = f.get_line()
+                except SchLibError:
+                    logger.warning(W_NOENDLIB + 'Library without end of file comment: `{}`'.format(file))
+                    break
 
 
 class DocLibEntry(object):

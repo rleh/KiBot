@@ -201,6 +201,7 @@ W_NOKICOST = '(W066) '
 W_UNKOUT = '(W067) '
 W_NOFILTERS = '(W068) '
 W_NOVARIANTS = '(W069) '
+W_NOENDLIB = '(W070) '
 
 
 class Rect(object):

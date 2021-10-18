@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - skip_bottom: bottom components aren't rotated.
 - XLSX BoM: option to control the logo scale (#84)
 - Import mechanism for filters and variants (#88)
+- Internal BoM: option to avoid merging components with empty fields.
+  Is named `merge_both_blank` and defaults to true.
 
 ### Changed
 - Internal BoM: now components with different Tolerance, Voltage, Current
@@ -23,8 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Can be disabled to use absolute coordinates. (#87)
 - Board View: flipped output. (#89)
 - Board View: problems with netnames using spaces. (#90)
-- Internal BoM: When `merge_blank_fields` is disabled and we compare two empty
-  fields now we avoid a match. So we don't group undefined components.
 
 
 ## [0.11.0] - 2021-04-25

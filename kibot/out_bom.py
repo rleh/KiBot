@@ -270,6 +270,8 @@ class BoMOptions(BaseOptions):
             """ Connectors with the same footprints will be grouped together, independent of the name of the connector """
             self.merge_blank_fields = True
             """ Component groups with blank fields will be merged into the most compatible group, where possible """
+            self.merge_both_blank = True
+            """ When creating groups two components with empty/missing field will be interpreted as with the same value """
             self.group_fields = GroupFields
             """ [list(string)] List of fields used for sorting individual components into groups.
                 Components which match (comparing *all* fields) will be grouped together.

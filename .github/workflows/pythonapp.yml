@@ -31,7 +31,7 @@ jobs:
         submodules: recursive
     - name: Install dependencies
       run: |
-        pip install git+https://github.com/set-soft/kicost-digikey-api-v3.git
+        pip3 install git+https://github.com/set-soft/kicost-digikey-api-v3.git
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

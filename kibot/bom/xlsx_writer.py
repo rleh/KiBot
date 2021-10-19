@@ -11,6 +11,7 @@ XLSX Writer: Generates an XLSX BoM file.
 import io
 import pprint
 import os.path as op
+import os
 import sys
 from textwrap import wrap
 from base64 import b64decode
@@ -43,7 +44,7 @@ try:
     from kicost.kicost import query_part_info
     from kicost.spreadsheet import create_worksheet, Spreadsheet
     from kicost.distributors import (init_distributor_dict, set_distributors_logger, get_distributors_list,
-                                     get_dist_name_from_label, set_distributors_progress)
+                                     get_dist_name_from_label, set_distributors_progress, set_api_status)
     from kicost.edas import set_edas_logger
     # Progress mechanism: use the one declared in __main__ (TQDM)
     from kicost.__main__ import ProgressConsole
@@ -428,6 +429,15 @@ def create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_s
     set_edas_logger(logger)
     # Start with a clean list of available distributors
     init_distributor_dict()
+    # ***** DEBUG!!!
+    # Test Digi-Key API
+    set_api_status('KitSpace', False)
+    set_api_status('Digi-Key', True)
+    os.environ['DIGIKEY_SAVE_RESULTS'] = '1'
+    os.environ['DIGIKEY_FAKE_RESULTS'] = '1'
+    os.environ['DIGIKEY_STORAGE_PATH'] = op.abspath(op.join(op.dirname(__file__), '../../submodules/KiCost/tests/digikey'))
+    logger.setLevel(1)  # Max. KiCost debug
+    # ***** End of DEBUG!!!
     # Create the projects information structure
     prj_info = [{'title': p.name, 'company': p.sch.company, 'date': p.sch.date, 'qty': p.number} for p in cfg.aggregate]
     # Create the worksheets

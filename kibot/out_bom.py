@@ -163,6 +163,8 @@ class BoMXLSX(BoMLinkable):
             """ Head style: modern-blue, modern-green, modern-red and classic """
             self.kicost = False
             """ Enable KiCost worksheet creation """
+            self.specs = False
+            """ Enable Specs worksheet creation """
             self.logo_scale = 2
             """ Scaling factor for the logo. Note that this value isn't honored by all spreadsheet software """
 

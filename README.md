@@ -717,6 +717,7 @@ Next time you need this list just use an alias, like this:
         - `ignore_dnf`: [boolean=true] Exclude DNF (Do Not Fit) components.
         - `int_qtys`: [boolean=true] Component quantities are always expressed as integers. Using the ceil() function.
         - `merge_blank_fields`: [boolean=true] Component groups with blank fields will be merged into the most compatible group, where possible.
+        - `merge_both_blank`: [boolean=true] When creating groups two components with empty/missing field will be interpreted as with the same value.
         - `no_conflict`: [list(string)] List of fields where we tolerate conflicts.
                          Use it to avoid undesired warnings.
                          By default the field indicated in `fit_field` and the field `part` are excluded.
@@ -744,6 +745,7 @@ Next time you need this list just use an alias, like this:
             - `logo`: [string|boolean=''] PNG file to use as logo, use false to remove.
             - `logo_scale`: [number=2] Scaling factor for the logo. Note that this value isn't honored by all spreadsheet software.
             - `max_col_width`: [number=60] [20,999] Maximum column width (characters).
+            - `specs`: [boolean=false] Enable Specs worksheet creation.
             - `style`: [string='modern-blue'] Head style: modern-blue, modern-green, modern-red and classic.
             - `title`: [string='KiBot Bill of Materials'] BoM title.
 

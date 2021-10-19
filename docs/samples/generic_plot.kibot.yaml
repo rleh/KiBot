@@ -165,6 +165,8 @@ outputs:
       int_qtys: true
       # [boolean=true] Component groups with blank fields will be merged into the most compatible group, where possible
       merge_blank_fields: true
+      # [boolean=true] When creating groups two components with empty/missing field will be interpreted as with the same value
+      merge_both_blank: true
       # [list(string)] List of fields where we tolerate conflicts.
       # Use it to avoid undesired warnings.
       # By default the field indicated in `fit_field` and the field `part` are excluded
@@ -214,6 +216,8 @@ outputs:
         logo_scale: 2
         # [number=60] [20,999] Maximum column width (characters)
         max_col_width: 60
+        # [boolean=false] Enable Specs worksheet creation
+        specs: false
         # [string='modern-blue'] Head style: modern-blue, modern-green, modern-red and classic
         style: 'modern-blue'
         # [string='KiBot Bill of Materials'] BoM title

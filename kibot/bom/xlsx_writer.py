@@ -247,6 +247,45 @@ def create_color_ref(workbook, col_colors, hl_empty, fmt_cols, do_kicost, kicost
             worksheet.write_string(row, 0, label, format)
 
 
+def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w):
+    worksheet = workbook.add_worksheet(name)
+    worksheet.write_string(0, 0, 'References', fmt_head)
+    c = 1
+    to_col = {}
+    col_w = [12]
+    for col in columns:
+        worksheet.write_string(0, c, col, fmt_head)
+        to_col[col] = c
+        col_w.append(len(col))
+        c = c + 1
+    r = 1
+    for part in parts:
+        worksheet.write_string(r, 0, part.collapsed_refs, fmt_cols[0][r % 2])
+        ref_len = len(part.collapsed_refs)
+        row_h = 1
+        if ref_len > col_w[0]:
+            if ref_len > max_w:
+                row_h = len(wrap(part.collapsed_refs, max_w))
+                ref_len = max_w
+            col_w[0] = ref_len
+        for k, v in part.specs.items():
+            c = to_col[k]
+            text = v[1]
+            worksheet.write_string(r, c, text, fmt_cols[2][r % 2])
+            text_l = len(text)
+            if text_l > col_w[c]:
+                if text_l > max_w:
+                    h = len(wrap(text, max_w))
+                    row_h = max(row_h, h)
+                    text_l = max_w
+                col_w[c] = text_l
+        if row_h > 1:
+            worksheet.set_row(r, 15.0*row_h)
+        r = r + 1
+    for i, width in enumerate(col_w):
+        worksheet.set_column(i, i, width)
+
+
 def adjust_widths(worksheet, column_widths, max_width, levels):
     c_levels = len(levels)
     for i, width in enumerate(column_widths):
@@ -413,7 +452,25 @@ def compute_qtys(cfg, g):
     return [str(g.get_count(sch.name)) for sch in cfg.aggregate]
 
 
-def create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_subtitle, cfg):
+def create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg):
+    if cfg.xlsx.specs:
+        meta_names = ['Specs', 'Specs (DNF)']
+        for ws in range(2):
+            spec_cols = {}
+            parts = used_parts[ws]
+            for part in parts:
+                for spec in part.specs:
+                    if spec in spec_cols:
+                        spec_cols[spec] += 1
+                    else:
+                        spec_cols[spec] = 1
+            if len(spec_cols):
+                c = len(parts)
+                create_meta(workbook, meta_names[ws], sorted(spec_cols, key=lambda k: (c - spec_cols[k], k)), parts, fmt_head,
+                            fmt_cols, cfg.xlsx.max_col_width)
+
+
+def create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_subtitle, fmt_head, fmt_cols, cfg):
     if not KICOST_SUPPORT:
         logger.warning(W_NOKICOST, 'KiCost sheet requested but failed to load KiCost support')
         return
@@ -485,6 +542,7 @@ def create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_s
             id = new_id.lower()
         if id in cfg.column_rename:
             v['label'] = cfg.column_rename[id]
+    used_parts = []
     for ws in range(2):
         # Second pass is DNF
         dnf = ws == 1
@@ -533,6 +591,9 @@ def create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_s
         if cfg.xlsx.title:
             wks.set_row(0, 32)
             wks.merge_range(0, col1, 0, ss.globals_width, cfg.xlsx.title, fmt_title)
+        used_parts.append(parts)
+    # Specs sheets
+    create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg)
     colors = {}
     colors['Best price'] = ss.wrk_formats['best_price']
     colors['No manufacturer or distributor code'] = ss.wrk_formats['not_manf_codes']
@@ -670,7 +731,8 @@ def write_xlsx(filename, groups, col_fields, head_names, cfg):
     # Optionally add KiCost information
     kicost_colors = None
     if cfg.xlsx.kicost:
-        kicost_colors = create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_subtitle, cfg)
+        kicost_colors = create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_subtitle, fmt_head,
+                                            fmt_cols, cfg)
     # Add a sheet for the color references
     create_color_ref(workbook, cfg.xlsx.col_colors, hl_empty, fmt_cols, cfg.xlsx.kicost and KICOST_SUPPORT, kicost_colors)
 

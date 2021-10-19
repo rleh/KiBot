@@ -15,7 +15,7 @@ from math import ceil
 from .units import compare_values, comp_match, get_last_warning
 from .bom_writer import write_bom
 from .columnlist import ColumnList
-from ..misc import DNF, W_FIELDCONF, W_BADVAL1
+from ..misc import DNF, W_FIELDCONF
 from .. import log
 
 logger = log.get_logger(__name__)

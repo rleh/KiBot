@@ -159,7 +159,8 @@ def comp_match(component, ref_prefix, ref=None):
     if post:
         if "." in value:
             last_warning = W_BADVAL3
-            logger.warning(W_BADVAL3 + "Malformed value: `{}` (unit split, but contains decimal point)".format(original, where))
+            logger.warning(W_BADVAL3 + "Malformed value: `{}` (unit split, but contains decimal point{})".
+                           format(original, where))
             return None
         value = float(value)
         postValue = float(post) / (10 ** len(post))

@@ -349,7 +349,7 @@ class ComponentGroup(object):
         return row
 
 
-def get_value_sort(comp):
+def get_value_sort(comp, fallback_ref=False):
     """ Try to better sort R, L and C components """
     res = comp.value_sort
     if res:
@@ -361,6 +361,8 @@ def get_value_sort(comp):
             # milli Ohms
             value = "{0:15d}".format(int(value * 1000 * mult + 0.1))
         return value
+    if fallback_ref:
+        return comp.ref_prefix + "{0:15d}".format(_suffix_to_num(comp.ref_suffix))
     return comp.value
 
 
@@ -439,8 +441,16 @@ def group_components(cfg, components):
         if cfg.normalize_values:
             g.fields[ColumnList.COL_VALUE_L] = normalize_value(g.components[0], decimal_point)
     # Sort the groups
-    # First priority is the Type of component (e.g. R?, U?, L?)
-    groups = sorted(groups, key=lambda g: [g.components[0].ref_prefix, get_value_sort(g.components[0])])
+    if cfg.sort_style == 'type_value':
+        # First priority is the Type of component (e.g. R?, U?, L?)
+        # Second is the value
+        groups = sorted(groups, key=lambda g: [g.components[0].ref_prefix, get_value_sort(g.components[0])])
+    elif cfg.sort_style == 'type_value_ref':
+        # First priority is the Type of component (e.g. R?, U?, L?)
+        # Second is the value, but if we don't have a value we use the reference
+        groups = sorted(groups, key=lambda g: [g.components[0].ref_prefix, get_value_sort(g.components[0], True)])
+    else:  # ref
+        groups = sorted(groups, key=lambda g: [g.components[0].ref_prefix, _suffix_to_num(g.components[0].ref_suffix)])
     # Enumerate the groups and compute stats
     n_total = 0
     n_fitted = 0

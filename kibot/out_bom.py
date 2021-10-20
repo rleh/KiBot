@@ -330,6 +330,8 @@ class BoMOptions(BaseOptions):
             """ [string|list(string)] Include this distributors list. Default is all the available """
             self.no_distributors = Optionable
             """ [string|list(string)] Exclude this distributors list. They are removed after computing `distributors` """
+            self.sort_style = 'type_value'
+            """ [type_value,type_value_ref,ref] Sorting criteria """
         self._format_example = 'CSV'
         super().__init__()
 

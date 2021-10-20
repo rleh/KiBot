@@ -68,7 +68,7 @@ GREY_L = "#f3f3f3"
 HEAD_COLOR_R = "#982020"
 HEAD_COLOR_G = "#009879"
 HEAD_COLOR_B = "#0e4e8e"
-DEFAULT_FMT = {'text_wrap': True, 'align': 'center_across', 'valign': 'vjustify'}
+DEFAULT_FMT = {'text_wrap': True, 'align': 'center_across', 'valign': 'vcenter'}
 KICOST_COLUMNS = {'refs': ColumnList.COL_REFERENCE,
                   'desc': ColumnList.COL_DESCRIPTION,
                   'qty': ColumnList.COL_GRP_BUILD_QUANTITY}

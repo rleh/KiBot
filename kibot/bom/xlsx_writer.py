@@ -486,10 +486,13 @@ def create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_s
     set_edas_logger(logger)
     # Start with a clean list of available distributors
     init_distributor_dict()
+    # Filter which APIs we want
+    for api in cfg.xlsx.kicost_api_disable:
+        set_api_status(api, False)
+    for api in cfg.xlsx.kicost_api_enable:
+        set_api_status(api, True)
     # ***** DEBUG!!!
     # Test Digi-Key API
-    set_api_status('KitSpace', False)
-    set_api_status('Digi-Key', True)
     os.environ['DIGIKEY_SAVE_RESULTS'] = '1'
     os.environ['DIGIKEY_FAKE_RESULTS'] = '1'
     os.environ['DIGIKEY_STORAGE_PATH'] = op.abspath(op.join(op.dirname(__file__), '../../submodules/KiCost/tests/digikey'))

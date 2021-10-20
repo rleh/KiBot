@@ -163,8 +163,12 @@ class BoMXLSX(BoMLinkable):
             """ Head style: modern-blue, modern-green, modern-red and classic """
             self.kicost = False
             """ Enable KiCost worksheet creation """
+            self.kicost_api_enable = Optionable
+            """ [string|list(string)=''] List of KiCost APIs to enable """
+            self.kicost_api_disable = Optionable
+            """ [string|list(string)=''] List of KiCost APIs to disable """
             self.specs = False
-            """ Enable Specs worksheet creation """
+            """ Enable Specs worksheet creation. Contains specifications for the components. Works with only some KiCost APIs """
             self.logo_scale = 2
             """ Scaling factor for the logo. Note that this value isn't honored by all spreadsheet software """
 
@@ -175,6 +179,15 @@ class BoMXLSX(BoMLinkable):
             self.style = 'modern-blue'
         if self.style not in VALID_STYLES:
             raise KiPlotConfigurationError('Unknown style `{}`'.format(self.style))
+        # KiCost APIs
+        if isinstance(self.kicost_api_enable, type):
+            self.kicost_api_enable = []
+        elif isinstance(self.kicost_api_enable, str):
+            self.kicost_api_enable = [self.kicost_api_enable]
+        if isinstance(self.kicost_api_disable, type):
+            self.kicost_api_disable = []
+        elif isinstance(self.kicost_api_disable, str):
+            self.kicost_api_disable = [self.kicost_api_disable]
 
 
 class ComponentAliases(Optionable):

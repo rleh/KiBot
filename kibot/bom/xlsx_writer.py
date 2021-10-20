@@ -72,6 +72,7 @@ DEFAULT_FMT = {'text_wrap': True, 'align': 'center_across', 'valign': 'vcenter'}
 KICOST_COLUMNS = {'refs': ColumnList.COL_REFERENCE,
                   'desc': ColumnList.COL_DESCRIPTION,
                   'qty': ColumnList.COL_GRP_BUILD_QUANTITY}
+SPECS_GENERATED = set((ColumnList.COL_REFERENCE, ColumnList.COL_ROW_NUMBER))
 
 
 def bg_color(col):
@@ -255,10 +256,12 @@ def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w):
     for c, col in enumerate(columns):
         worksheet.write_string(0, c, col, fmt_head)
         to_col[col] = c
-        col_w.append(len(col))
+        col_w.append(max(len(col), 6))
     for r, part in enumerate(parts):
         # Add the references as another spec
         part.specs[ColumnList.COL_REFERENCE] = (ColumnList.COL_REFERENCE, part.collapsed_refs)
+        # Also add the row
+        part.specs[ColumnList.COL_ROW_NUMBER] = (ColumnList.COL_ROW_NUMBER, str(r+1))
         row_h = 1
         for col in columns:
             v = part.specs.get(col, None)
@@ -266,7 +269,8 @@ def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w):
                 continue
             c = to_col[col]
             text = v[1]
-            worksheet.write_string(r+1, c, text, fmt_cols[2][r % 2])
+            fmt_kind = 0 if col in SPECS_GENERATED else 2
+            worksheet.write_string(r+1, c, text, fmt_cols[fmt_kind][r % 2])
             text_l = len(text)
             if text_l > col_w[c]:
                 if text_l > max_w:
@@ -468,7 +472,7 @@ def create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg):
                 else:
                     # Inform about missing columns
                     for c in columns:
-                        if c not in spec_cols and c != ColumnList.COL_REFERENCE:
+                        if c not in spec_cols and c not in SPECS_GENERATED:
                             logger.warning(W_BADFIELD+'Invalid Specs column name `{}`'.format(c))
                 create_meta(workbook, meta_names[ws], columns, parts, fmt_head, fmt_cols, cfg.xlsx.max_col_width)
 

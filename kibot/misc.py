@@ -34,6 +34,7 @@ PCBDRAW_ERR = 20
 SVG_SCH_PRINT = 21
 CORRUPTED_SCH = 22
 WRONG_INSTALL = 23
+KICOST_ERROR = 24
 error_level_to_name = ['NONE',
                        'INTERNAL_ERROR',
                        'WRONG_ARGUMENTS',
@@ -58,6 +59,7 @@ error_level_to_name = ['NONE',
                        'SVG_SCH_PRINT',
                        'CORRUPTED_SCH',
                        'WRONG_INSTALL',
+                       'KICOST_ERROR',
                        ]
 CMD_EESCHEMA_DO = 'eeschema_do'
 URL_EESCHEMA_DO = 'https://github.com/INTI-CMNB/kicad-automation-scripts'

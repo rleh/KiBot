@@ -18,7 +18,8 @@ from base64 import b64decode
 from .columnlist import ColumnList
 from .kibot_logo import KIBOT_LOGO
 from .. import log
-from ..misc import W_NOKICOST, W_UNKDIST
+from ..misc import W_NOKICOST, W_UNKDIST, KICOST_ERROR
+from ..error import trace_dump
 from ..__main__ import __version__
 try:
     from xlsxwriter import Workbook
@@ -38,7 +39,7 @@ try:
             sys.path.insert(0, rel_path)
     # Init the logger first
     logger = log.get_logger(__name__)
-    from kicost.global_vars import set_logger
+    from kicost.global_vars import set_logger, KiCostError
     set_logger(logger)
     from kicost import PartGroup
     from kicost.kicost import query_part_info
@@ -470,7 +471,7 @@ def create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg):
                             fmt_cols, cfg.xlsx.max_col_width)
 
 
-def create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_subtitle, fmt_head, fmt_cols, cfg):
+def _create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_subtitle, fmt_head, fmt_cols, cfg):
     if not KICOST_SUPPORT:
         logger.warning(W_NOKICOST, 'KiCost sheet requested but failed to load KiCost support')
         return
@@ -608,6 +609,15 @@ def create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_s
     colors['This part is obsolete'] = ss.wrk_formats['part_format_obsolete']
     colors['This part is listed but is not normally stocked'] = ss.wrk_formats['not_stocked']
     return colors
+
+
+def create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_subtitle, fmt_head, fmt_cols, cfg):
+    try:
+        _create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_subtitle, fmt_head, fmt_cols, cfg)
+    except KiCostError as e:
+        trace_dump()
+        logger.error('KiCost error: `{}` ({})'.format(e.msg, e.id))
+        exit(KICOST_ERROR)
 
 
 def write_xlsx(filename, groups, col_fields, head_names, cfg):

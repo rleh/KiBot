@@ -18,7 +18,7 @@ from base64 import b64decode
 from .columnlist import ColumnList
 from .kibot_logo import KIBOT_LOGO
 from .. import log
-from ..misc import W_NOKICOST, W_UNKDIST, KICOST_ERROR
+from ..misc import W_NOKICOST, W_UNKDIST, KICOST_ERROR, W_BADFIELD
 from ..error import trace_dump
 from ..__main__ import __version__
 try:
@@ -250,29 +250,23 @@ def create_color_ref(workbook, col_colors, hl_empty, fmt_cols, do_kicost, kicost
 
 def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w):
     worksheet = workbook.add_worksheet(name)
-    worksheet.write_string(0, 0, 'References', fmt_head)
-    c = 1
     to_col = {}
-    col_w = [12]
-    for col in columns:
+    col_w = []
+    for c, col in enumerate(columns):
         worksheet.write_string(0, c, col, fmt_head)
         to_col[col] = c
         col_w.append(len(col))
-        c = c + 1
-    r = 1
-    for part in parts:
-        worksheet.write_string(r, 0, part.collapsed_refs, fmt_cols[0][r % 2])
-        ref_len = len(part.collapsed_refs)
+    for r, part in enumerate(parts):
+        # Add the references as another spec
+        part.specs[ColumnList.COL_REFERENCE] = (ColumnList.COL_REFERENCE, part.collapsed_refs)
         row_h = 1
-        if ref_len > col_w[0]:
-            if ref_len > max_w:
-                row_h = len(wrap(part.collapsed_refs, max_w))
-                ref_len = max_w
-            col_w[0] = ref_len
-        for k, v in part.specs.items():
-            c = to_col[k]
+        for col in columns:
+            v = part.specs.get(col, None)
+            if v is None:
+                continue
+            c = to_col[col]
             text = v[1]
-            worksheet.write_string(r, c, text, fmt_cols[2][r % 2])
+            worksheet.write_string(r+1, c, text, fmt_cols[2][r % 2])
             text_l = len(text)
             if text_l > col_w[c]:
                 if text_l > max_w:
@@ -281,8 +275,7 @@ def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w):
                     text_l = max_w
                 col_w[c] = text_l
         if row_h > 1:
-            worksheet.set_row(r, 15.0*row_h)
-        r = r + 1
+            worksheet.set_row(r+1, 15.0*row_h)
     for i, width in enumerate(col_w):
         worksheet.set_column(i, i, width)
 
@@ -466,9 +459,18 @@ def create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg):
                     else:
                         spec_cols[spec] = 1
             if len(spec_cols):
-                c = len(parts)
-                create_meta(workbook, meta_names[ws], sorted(spec_cols, key=lambda k: (c - spec_cols[k], k)), parts, fmt_head,
-                            fmt_cols, cfg.xlsx.max_col_width)
+                columns = cfg.xlsx.specs_columns
+                if columns is None:
+                    # Use all columns, sort them by relevance (most used) and alphabetically
+                    c = len(parts)
+                    columns = sorted(spec_cols, key=lambda k: (c - spec_cols[k], k))
+                    columns.insert(0, ColumnList.COL_REFERENCE)
+                else:
+                    # Inform about missing columns
+                    for c in columns:
+                        if c not in spec_cols and c != ColumnList.COL_REFERENCE:
+                            logger.warning(W_BADFIELD+'Invalid Specs column name `{}`'.format(c))
+                create_meta(workbook, meta_names[ws], columns, parts, fmt_head, fmt_cols, cfg.xlsx.max_col_width)
 
 
 def _create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_subtitle, fmt_head, fmt_cols, cfg):

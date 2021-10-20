@@ -168,7 +168,11 @@ class BoMXLSX(BoMLinkable):
             self.kicost_api_disable = Optionable
             """ [string|list(string)=''] List of KiCost APIs to disable """
             self.specs = False
-            """ Enable Specs worksheet creation. Contains specifications for the components. Works with only some KiCost APIs """
+            """ Enable Specs worksheet creation. Contains specifications for the components.
+                Works with only some KiCost APIs """
+            self.specs_columns = Optionable
+            """ [list(string)] Which columns are included in the Specs worksheet. Use `References` for the references.
+                By default all are included """
             self.logo_scale = 2
             """ Scaling factor for the logo. Note that this value isn't honored by all spreadsheet software """
 
@@ -188,6 +192,9 @@ class BoMXLSX(BoMLinkable):
             self.kicost_api_disable = []
         elif isinstance(self.kicost_api_disable, str):
             self.kicost_api_disable = [self.kicost_api_disable]
+        # Specs columns
+        if isinstance(self.specs_columns, type):
+            self.specs_columns = None
 
 
 class ComponentAliases(Optionable):

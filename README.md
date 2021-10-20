@@ -742,10 +742,15 @@ Next time you need this list just use an alias, like this:
             - `hide_stats_info`: [boolean=false] Hide statistics information.
             - `highlight_empty`: [boolean=true] Use a color for empty cells. Applies only when `col_colors` is `true`.
             - `kicost`: [boolean=false] Enable KiCost worksheet creation.
+            - `kicost_api_disable`: [string|list(string)=''] List of KiCost APIs to disable.
+            - `kicost_api_enable`: [string|list(string)=''] List of KiCost APIs to enable.
             - `logo`: [string|boolean=''] PNG file to use as logo, use false to remove.
             - `logo_scale`: [number=2] Scaling factor for the logo. Note that this value isn't honored by all spreadsheet software.
             - `max_col_width`: [number=60] [20,999] Maximum column width (characters).
-            - `specs`: [boolean=false] Enable Specs worksheet creation.
+            - `specs`: [boolean=false] Enable Specs worksheet creation. Contains specifications for the components.
+                       Works with only some KiCost APIs.
+            - `specs_columns`: [list(string)] Which columns are included in the Specs worksheet. Use `References` for the references.
+                               By default all are included.
             - `style`: [string='modern-blue'] Head style: modern-blue, modern-green, modern-red and classic.
             - `title`: [string='KiBot Bill of Materials'] BoM title.
 

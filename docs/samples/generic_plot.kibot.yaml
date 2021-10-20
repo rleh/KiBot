@@ -210,14 +210,22 @@ outputs:
         highlight_empty: true
         # [boolean=false] Enable KiCost worksheet creation
         kicost: false
+        # [string|list(string)=''] List of KiCost APIs to disable
+        kicost_api_disable: ''
+        # [string|list(string)=''] List of KiCost APIs to enable
+        kicost_api_enable: ''
         # [string|boolean=''] PNG file to use as logo, use false to remove
         logo: ''
         # [number=2] Scaling factor for the logo. Note that this value isn't honored by all spreadsheet software
         logo_scale: 2
         # [number=60] [20,999] Maximum column width (characters)
         max_col_width: 60
-        # [boolean=false] Enable Specs worksheet creation
+        # [boolean=false] Enable Specs worksheet creation. Contains specifications for the components.
+        # Works with only some KiCost APIs
         specs: false
+        # [list(string)] Which columns are included in the Specs worksheet. Use `References` for the references.
+        # By default all are included
+        specs_columns:
         # [string='modern-blue'] Head style: modern-blue, modern-green, modern-red and classic
         style: 'modern-blue'
         # [string='KiBot Bill of Materials'] BoM title

@@ -509,6 +509,11 @@ def _create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_
     Spreadsheet.ADJUST_ROW_AND_COL_SIZE = True
     Spreadsheet.MAX_COL_WIDTH = cfg.xlsx.max_col_width
     Spreadsheet.PART_NSEQ_SEPRTR = cfg.ref_separator
+    # Keep our sorting
+    try:
+        Spreadsheet.SORT_GROUPS = False
+    except Exception:
+        pass
     # Make the version less intrusive
     Spreadsheet.WRK_FORMATS['about_msg']['font_size'] = 8
     # Don 't add project info, we add our own data

@@ -259,7 +259,7 @@ def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w):
         to_col[col] = c
         text_l = max(len(col), 6)
         if text_l > max_w:
-            h = len(wrap(text, max_w))
+            h = len(wrap(col, max_w))
             row_h = max(row_h, h)
             text_l = max_w
         col_w.append(text_l)

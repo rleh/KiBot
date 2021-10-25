@@ -11,7 +11,6 @@ XLSX Writer: Generates an XLSX BoM file.
 import io
 import pprint
 import os.path as op
-import os
 import sys
 from textwrap import wrap
 from base64 import b64decode

@@ -413,7 +413,9 @@ def remove_unknown_distributors(distributors, available, silent):
         d = d.lower()
         if d not in available:
             # Is the label of the column?
-            d = get_dist_name_from_label(d)
+            new_d = get_dist_name_from_label(d)
+            if new_d is not None:
+                d = new_d
         if d not in available:
             if not silent:
                 logger.warning(W_UNKDIST+'Unknown distributor `{}`'.format(d))
@@ -502,7 +504,7 @@ def _create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_
     # Test Digi-Key API
     os.environ['DIGIKEY_CACHE_TTL'] = '-1'
     os.environ['DIGIKEY_STORAGE_PATH'] = op.abspath(op.join(op.dirname(__file__), '../../submodules/KiCost/tests/digikey'))
-    logger.setLevel(1)  # Max. KiCost debug
+    # logger.setLevel(1)  # Max. KiCost debug
     # ***** End of DEBUG!!!
     # Create the projects information structure
     prj_info = [{'title': p.name, 'company': p.sch.company, 'date': p.sch.date, 'qty': p.number} for p in cfg.aggregate]

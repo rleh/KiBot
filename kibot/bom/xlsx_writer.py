@@ -253,10 +253,18 @@ def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w):
     worksheet = workbook.add_worksheet(name)
     to_col = {}
     col_w = []
+    row_h = 1
     for c, col in enumerate(columns):
         worksheet.write_string(0, c, col, fmt_head)
         to_col[col] = c
-        col_w.append(max(len(col), 6))
+        text_l = max(len(col), 6)
+        if text_l > max_w:
+            h = len(wrap(text, max_w))
+            row_h = max(row_h, h)
+            text_l = max_w
+        col_w.append(text_l)
+    if row_h > 1:
+        worksheet.set_row(0, 15.0*row_h)
     for r, part in enumerate(parts):
         # Add the references as another spec
         part.specs[ColumnList.COL_REFERENCE] = (ColumnList.COL_REFERENCE, part.collapsed_refs)

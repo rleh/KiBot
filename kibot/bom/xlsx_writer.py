@@ -508,12 +508,6 @@ def _create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_
         set_api_status(api, False)
     for api in cfg.xlsx.kicost_api_enable:
         set_api_status(api, True)
-    # ***** DEBUG!!!
-    # Test Digi-Key API
-    os.environ['DIGIKEY_CACHE_TTL'] = '-1'
-    os.environ['DIGIKEY_STORAGE_PATH'] = op.abspath(op.join(op.dirname(__file__), '../../submodules/KiCost/tests/digikey'))
-    # logger.setLevel(1)  # Max. KiCost debug
-    # ***** End of DEBUG!!!
     # Create the projects information structure
     prj_info = [{'title': p.name, 'company': p.sch.company, 'date': p.sch.date, 'qty': p.number} for p in cfg.aggregate]
     # Create the worksheets

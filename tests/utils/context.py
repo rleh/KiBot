@@ -23,6 +23,13 @@ MODE_SCH = 1
 MODE_PCB = 0
 # Defined as True to collect real world queries
 ADD_QUERY_TO_KNOWN = False
+# ***** DEBUG!!!
+# Test Digi-Key API
+# os.environ['DIGIKEY_CACHE_TTL'] = '-1'
+# os.environ['DIGIKEY_STORAGE_PATH'] = op.abspath(op.join(op.dirname(__file__), '../../submodules/KiCost/tests/digikey'))
+# logger.setLevel(1)  # Max. KiCost debug
+# ***** End of DEBUG!!!
+
 
 ng_ver = os.environ.get('KIAUS_USE_NIGHTLY')
 if ng_ver:

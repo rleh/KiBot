@@ -728,6 +728,7 @@ Next time you need this list just use an alias, like this:
         - `output`: [string='%f-%i%v.%x'] filename for the output (%i=bom). Affected by global options.
         - `ref_id`: [string=''] A prefix to add to all the references from this project. Used for multiple projects.
         - `ref_separator`: [string=' '] Separator used for the list of references.
+        - `sort_style`: [string='type_value'] [type_value,type_value_ref,ref] Sorting criteria.
         - `source_by_id`: [boolean=false] Generate the `Source BoM` column using the reference ID instead of the project name.
         - `use_alt`: [boolean=false] Print grouped references in the alternate compressed style eg: R1-R7,R18.
         - `variant`: [string=''] Board variant, used to determine which components

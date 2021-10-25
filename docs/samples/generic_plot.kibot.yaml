@@ -185,6 +185,8 @@ outputs:
       ref_id: ''
       # [string=' '] Separator used for the list of references
       ref_separator: ' '
+      # [string='type_value'] [type_value,type_value_ref,ref] Sorting criteria
+      sort_style: 'type_value'
       # [boolean=false] Generate the `Source BoM` column using the reference ID instead of the project name
       source_by_id: false
       # [boolean=false] Print grouped references in the alternate compressed style eg: R1-R7,R18

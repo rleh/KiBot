@@ -1,3 +1,4 @@
 [submodule "submodules/KiCost"]
 	path = submodules/KiCost
 	url = https://github.com/hildogjr/KiCost.git
+	branch = api_ext_plugin

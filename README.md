@@ -750,8 +750,14 @@ Next time you need this list just use an alias, like this:
             - `max_col_width`: [number=60] [20,999] Maximum column width (characters).
             - `specs`: [boolean=false] Enable Specs worksheet creation. Contains specifications for the components.
                        Works with only some KiCost APIs.
-            - `specs_columns`: [list(string)] Which columns are included in the Specs worksheet. Use `References` for the references.
-                               By default all are included.
+            - `specs_columns`: [list(dict)|list(string)] Which columns are included in the Specs worksheet. Use `References` for the references,
+                               'Row' for the order and 'Sep' to separate groups at the same level. By default all are included.
+              * Valid keys:
+                - `comment`: [string=''] Used as explanation for this column. The XLSX output uses it.
+                - `field`: [string=''] Name of the field to use for this column.
+                - `join`: [list(string)|string=''] List of fields to join to this column.
+                - `level`: [number=0] Used to group columns. The XLSX output uses it to collapse columns.
+                - `name`: [string=''] Name to display in the header. The field is used when empty.
             - `style`: [string='modern-blue'] Head style: modern-blue, modern-green, modern-red and classic.
             - `title`: [string='KiBot Bill of Materials'] BoM title.
 

@@ -71,7 +71,7 @@ DEFAULT_FMT = {'text_wrap': True, 'align': 'center_across', 'valign': 'vcenter'}
 KICOST_COLUMNS = {'refs': ColumnList.COL_REFERENCE,
                   'desc': ColumnList.COL_DESCRIPTION,
                   'qty': ColumnList.COL_GRP_BUILD_QUANTITY}
-SPECS_GENERATED = set((ColumnList.COL_REFERENCE, ColumnList.COL_ROW_NUMBER))
+SPECS_GENERATED = set((ColumnList.COL_REFERENCE_L, ColumnList.COL_ROW_NUMBER_L, 'sep'))
 
 
 def bg_color(col):
@@ -248,14 +248,13 @@ def create_color_ref(workbook, col_colors, hl_empty, fmt_cols, do_kicost, kicost
             worksheet.write_string(row, 0, label, format)
 
 
-def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w):
+def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w, rename, levels, comments, join):
     worksheet = workbook.add_worksheet(name)
-    to_col = {}
     col_w = []
     row_h = 1
     for c, col in enumerate(columns):
-        worksheet.write_string(0, c, col, fmt_head)
-        to_col[col] = c
+        name = rename.get(col.lower(), col) if rename else col
+        worksheet.write_string(0, c, name, fmt_head)
         text_l = max(len(col), 6)
         if text_l > max_w:
             h = len(wrap(col, max_w))
@@ -266,19 +265,30 @@ def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w):
         worksheet.set_row(0, 15.0*row_h)
     for r, part in enumerate(parts):
         # Add the references as another spec
-        part.specs[ColumnList.COL_REFERENCE] = (ColumnList.COL_REFERENCE, part.collapsed_refs)
+        part.specs[ColumnList.COL_REFERENCE_L] = (ColumnList.COL_REFERENCE, part.collapsed_refs)
         # Also add the row
-        part.specs[ColumnList.COL_ROW_NUMBER] = (ColumnList.COL_ROW_NUMBER, str(r+1))
+        part.specs[ColumnList.COL_ROW_NUMBER_L] = (ColumnList.COL_ROW_NUMBER, str(r+1))
         row_h = 1
-        for col in columns:
-            v = part.specs.get(col, None)
-            if v is None:
+        for c, col in enumerate(columns):
+            col_l = col.lower()
+            if col_l == 'sep':
+                col_w[c] = 0
                 continue
-            c = to_col[col]
+            v = part.specs.get(col_l, ['', ''])
             text = v[1]
-            fmt_kind = 0 if col in SPECS_GENERATED else 2
-            worksheet.write_string(r+1, c, text, fmt_cols[fmt_kind][r % 2])
+            # Append text from other fields
+            if join:
+                for j in join:
+                    if j[0] == col_l:
+                        for c_join in j[1:]:
+                            v = part.specs.get(c_join, None)
+                            if v:
+                                text += ' ' + v[1]
             text_l = len(text)
+            if not text_l:
+                continue
+            fmt_kind = 0 if col_l in SPECS_GENERATED else 2
+            worksheet.write_string(r+1, c, text, fmt_cols[fmt_kind][r % 2])
             if text_l > col_w[c]:
                 if text_l > max_w:
                     h = len(wrap(text, max_w))
@@ -288,7 +298,12 @@ def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w):
         if row_h > 1:
             worksheet.set_row(r+1, 15.0*row_h)
     for i, width in enumerate(col_w):
-        worksheet.set_column(i, i, width)
+        ops = {'level': levels[i] if levels else 0}
+        if not width:
+            ops['hidden'] = 1
+        if comments and comments[i]:
+            worksheet.write_comment(0, i, comments[i])
+        worksheet.set_column(i, i, width, None, ops)
 
 
 def adjust_widths(worksheet, column_widths, max_width, levels):
@@ -464,15 +479,18 @@ def create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg):
         meta_names = ['Specs', 'Specs (DNF)']
         for ws in range(2):
             spec_cols = {}
+            spec_cols_l = set()
             parts = used_parts[ws]
             for part in parts:
-                for spec in part.specs:
+                for name_l, v in part.specs.items():
+                    spec_cols_l.add(name_l)
+                    spec = v[0]
                     if spec in spec_cols:
                         spec_cols[spec] += 1
                     else:
                         spec_cols[spec] = 1
             if len(spec_cols):
-                columns = cfg.xlsx.specs_columns
+                columns = cfg.xlsx.s_columns
                 if columns is None:
                     # Use all columns, sort them by relevance (most used) and alphabetically
                     c = len(parts)
@@ -481,9 +499,11 @@ def create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg):
                 else:
                     # Inform about missing columns
                     for c in columns:
-                        if c not in spec_cols and c not in SPECS_GENERATED:
+                        col = c.lower()
+                        if col not in spec_cols_l and col not in SPECS_GENERATED:
                             logger.warning(W_BADFIELD+'Invalid Specs column name `{}`'.format(c))
-                create_meta(workbook, meta_names[ws], columns, parts, fmt_head, fmt_cols, cfg.xlsx.max_col_width)
+                create_meta(workbook, meta_names[ws], columns, parts, fmt_head, fmt_cols, cfg.xlsx.max_col_width,
+                            cfg.xlsx.s_rename, cfg.xlsx.s_levels, cfg.xlsx.s_comments, cfg.xlsx.s_join)
 
 
 def _create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_subtitle, fmt_head, fmt_cols, cfg):

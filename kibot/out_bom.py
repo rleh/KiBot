@@ -170,11 +170,44 @@ class BoMXLSX(BoMLinkable):
             self.specs = False
             """ Enable Specs worksheet creation. Contains specifications for the components.
                 Works with only some KiCost APIs """
-            self.specs_columns = Optionable
-            """ [list(string)] Which columns are included in the Specs worksheet. Use `References` for the references.
-                By default all are included """
+            self.specs_columns = BoMColumns
+            """ [list(dict)|list(string)] Which columns are included in the Specs worksheet. Use `References` for the references,
+                'Row' for the order and 'Sep' to separate groups at the same level. By default all are included """
             self.logo_scale = 2
             """ Scaling factor for the logo. Note that this value isn't honored by all spreadsheet software """
+
+    def process_columns_config(self, cols):
+        if isinstance(cols, type):
+            return (None, None, None, None, None)
+        columns = []
+        column_levels = []
+        column_comments = []
+        column_rename = {}
+        join = []
+        # Create the different lists
+        for col in cols:
+            if isinstance(col, str):
+                # Just a string, add to the list of used
+                new_col = col
+                new_col_l = new_col.lower()
+                level = 0
+                comment = ''
+            else:
+                # A complete entry
+                new_col = col.field
+                new_col_l = new_col.lower()
+                # A column rename
+                if col.name:
+                    column_rename[new_col_l] = col.name
+                # Attach other columns
+                if col.join:
+                    join.append(col.join)
+                level = col.level
+                comment = col.comment
+            columns.append(new_col)
+            column_levels.append(level)
+            column_comments.append(comment)
+        return (columns, column_levels, column_comments, column_rename, join)
 
     def config(self, parent):
         super().config(parent)
@@ -193,8 +226,8 @@ class BoMXLSX(BoMLinkable):
         elif isinstance(self.kicost_api_disable, str):
             self.kicost_api_disable = [self.kicost_api_disable]
         # Specs columns
-        if isinstance(self.specs_columns, type):
-            self.specs_columns = None
+        (self.s_columns, self.s_levels, self.s_comments, self.s_rename,
+         self.s_join) = self.process_columns_config(self.specs_columns)
 
 
 class ComponentAliases(Optionable):

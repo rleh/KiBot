@@ -536,6 +536,8 @@ def _create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_
     Spreadsheet.ADJUST_ROW_AND_COL_SIZE = True
     Spreadsheet.MAX_COL_WIDTH = cfg.xlsx.max_col_width
     Spreadsheet.PART_NSEQ_SEPRTR = cfg.ref_separator
+    if hasattr(Spreadsheet, 'SUPPRESS_DIST_DESC'):
+        Spreadsheet.SUPPRESS_DIST_DESC = False
     # Keep our sorting
     try:
         Spreadsheet.SORT_GROUPS = False

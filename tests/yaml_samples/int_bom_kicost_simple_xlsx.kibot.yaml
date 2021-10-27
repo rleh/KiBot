@@ -36,3 +36,4 @@ outputs:
          - 'Voltage'
       xlsx:
         kicost: true
+        kicost_api_disable: 'Digi-Key'

@@ -167,6 +167,8 @@ class BoMXLSX(BoMLinkable):
             """ [string|list(string)=''] List of KiCost APIs to enable """
             self.kicost_api_disable = Optionable
             """ [string|list(string)=''] List of KiCost APIs to disable """
+            self.kicost_dist_desc = False
+            """ Used to add a column with the distributor's description. So you can chek this is the right component """
             self.specs = False
             """ Enable Specs worksheet creation. Contains specifications for the components.
                 Works with only some KiCost APIs """

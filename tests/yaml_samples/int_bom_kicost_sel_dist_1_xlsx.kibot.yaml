@@ -39,3 +39,4 @@ outputs:
          - Digi-Key
       xlsx:
         kicost: true
+        kicost_api_disable: 'Digi-Key'

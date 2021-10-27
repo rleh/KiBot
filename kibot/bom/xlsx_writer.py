@@ -248,6 +248,17 @@ def create_color_ref(workbook, col_colors, hl_empty, fmt_cols, do_kicost, kicost
             worksheet.write_string(row, 0, label, format)
 
 
+def get_spec(part, name):
+    if name[0] != '_':
+        return part.specs.get(name, ['', ''])
+    name = name[1:]
+    for k, v in part.dd.items():
+        val = v.extra_info.get(name, None)
+        if val:
+            return [name, val]
+    return ['', '']
+
+
 def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w, rename, levels, comments, join):
     worksheet = workbook.add_worksheet(name)
     col_w = []
@@ -274,7 +285,7 @@ def create_meta(workbook, name, columns, parts, fmt_head, fmt_cols, max_w, renam
             if col_l == 'sep':
                 col_w[c] = 0
                 continue
-            v = part.specs.get(col_l, ['', ''])
+            v = get_spec(part, col_l)
             text = v[1]
             # Append text from other fields
             if join:
@@ -474,7 +485,7 @@ def compute_qtys(cfg, g):
     return [str(g.get_count(sch.name)) for sch in cfg.aggregate]
 
 
-def create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg):
+def create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg, ss):
     if cfg.xlsx.specs:
         meta_names = ['Specs', 'Specs (DNF)']
         for ws in range(2):
@@ -500,8 +511,9 @@ def create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg):
                     # Inform about missing columns
                     for c in columns:
                         col = c.lower()
-                        if col not in spec_cols_l and col not in SPECS_GENERATED:
-                            logger.warning(W_BADFIELD+'Invalid Specs column name `{}`'.format(c))
+                        if ((col[0] == '_' and col[1:] not in ss.extra_info_display) or
+                            (col[0] != '_' and col not in spec_cols_l and col not in SPECS_GENERATED)):
+                            logger.warning(W_BADFIELD+'Invalid Specs column name `{}` {}'.format(c, col[1:]))
                 create_meta(workbook, meta_names[ws], columns, parts, fmt_head, fmt_cols, cfg.xlsx.max_col_width,
                             cfg.xlsx.s_rename, cfg.xlsx.s_levels, cfg.xlsx.s_comments, cfg.xlsx.s_join)
 
@@ -632,7 +644,7 @@ def _create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_
             wks.merge_range(0, col1, 0, ss.globals_width, cfg.xlsx.title, fmt_title)
         used_parts.append(parts)
     # Specs sheets
-    create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg)
+    create_meta_sheets(workbook, used_parts, fmt_head, fmt_cols, cfg, ss)
     colors = {}
     colors['Best price'] = ss.wrk_formats['best_price']
     colors['No manufacturer or distributor code'] = ss.wrk_formats['not_manf_codes']

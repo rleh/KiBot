@@ -216,6 +216,8 @@ outputs:
         kicost_api_disable: ''
         # [string|list(string)=''] List of KiCost APIs to enable
         kicost_api_enable: ''
+        # [boolean=false] Used to add a column with the distributor's description. So you can chek this is the right component
+        kicost_dist_desc: false
         # [string|boolean=''] PNG file to use as logo, use false to remove
         logo: ''
         # [number=2] Scaling factor for the logo. Note that this value isn't honored by all spreadsheet software
@@ -226,7 +228,9 @@ outputs:
         # Works with only some KiCost APIs
         specs: false
         # [list(dict)|list(string)] Which columns are included in the Specs worksheet. Use `References` for the references,
-        # 'Row' for the order and 'Sep' to separate groups at the same level. By default all are included
+        # 'Row' for the order and 'Sep' to separate groups at the same level. By default all are included.
+        # Column names are distributor specific, the following aren't: '_desc', '_value', '_tolerance', '_footprint',
+        # '_power', '_current', '_voltage', '_frequency', '_temp_coeff', '_manf', '_size'
         specs_columns:
           # [string=''] Used as explanation for this column. The XLSX output uses it
           - comment: ''

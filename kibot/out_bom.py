@@ -174,7 +174,9 @@ class BoMXLSX(BoMLinkable):
                 Works with only some KiCost APIs """
             self.specs_columns = BoMColumns
             """ [list(dict)|list(string)] Which columns are included in the Specs worksheet. Use `References` for the references,
-                'Row' for the order and 'Sep' to separate groups at the same level. By default all are included """
+                'Row' for the order and 'Sep' to separate groups at the same level. By default all are included.
+                Column names are distributor specific, the following aren't: '_desc', '_value', '_tolerance', '_footprint',
+                '_power', '_current', '_voltage', '_frequency', '_temp_coeff', '_manf', '_size' """
             self.logo_scale = 2
             """ Scaling factor for the logo. Note that this value isn't honored by all spreadsheet software """
 
@@ -194,6 +196,8 @@ class BoMXLSX(BoMLinkable):
                 new_col_l = new_col.lower()
                 level = 0
                 comment = ''
+                if new_col_l[0] == '_':
+                    column_rename[new_col_l] = new_col_l[1:].capitalize()
             else:
                 # A complete entry
                 new_col = col.field
@@ -201,6 +205,8 @@ class BoMXLSX(BoMLinkable):
                 # A column rename
                 if col.name:
                     column_rename[new_col_l] = col.name
+                elif new_col_l[0] == '_':
+                    column_rename[new_col_l] = new_col_l[1:].capitalize()
                 # Attach other columns
                 if col.join:
                     join.append(col.join)

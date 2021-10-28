@@ -44,8 +44,10 @@ try:
     from kicost.kicost import query_part_info
     from kicost.spreadsheet import create_worksheet, Spreadsheet
     from kicost.distributors import (init_distributor_dict, set_distributors_logger, get_distributors_list,
-                                     get_dist_name_from_label, set_distributors_progress, set_api_status)
+                                     get_dist_name_from_label, set_distributors_progress, is_valid_api,
+                                     configure_from_environment, configure_apis)
     from kicost.edas import set_edas_logger
+    from kicost.config import load_config
     # Progress mechanism: use the one declared in __main__ (TQDM)
     from kicost.__main__ import ProgressConsole
     set_distributors_progress(ProgressConsole)
@@ -532,13 +534,21 @@ def _create_kicost_sheet(workbook, groups, image_data, fmt_title, fmt_info, fmt_
     # Force KiCost to use our logger
     set_distributors_logger(logger)
     set_edas_logger(logger)
-    # Start with a clean list of available distributors
-    init_distributor_dict()
+    # Load KiCost config (includes APIs config)
+    api_options = load_config()
+    # Environment with overwrite
+    configure_from_environment(api_options, True)
     # Filter which APIs we want
     for api in cfg.xlsx.kicost_api_disable:
-        set_api_status(api, False)
+        if is_valid_api(api):
+            api_options[api]['enable'] = False
     for api in cfg.xlsx.kicost_api_enable:
-        set_api_status(api, True)
+        if is_valid_api(api):
+            api_options[api]['enable'] = True
+    # Configure the APIs
+    configure_apis(api_options)
+    # Start with a clean list of available distributors
+    init_distributor_dict()
     # Create the projects information structure
     prj_info = [{'title': p.name, 'company': p.sch.company, 'date': p.sch.date, 'qty': p.number} for p in cfg.aggregate]
     # Create the worksheets

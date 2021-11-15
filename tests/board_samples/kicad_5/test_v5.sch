@@ -1915,7 +1915,7 @@ F 0 "R1" V 1093 3450 50  0000 C CNN
 F 1 "R" V 1184 3450 50  0000 C CNN
 F 2 "" V 1230 3450 50  0001 C CNN
 F 3 "~" H 1300 3450 50  0001 C CNN
-F 4 "Hi!" H 1300 3450 50  0001 C CNN "Test"
+F 4 "Hi! \"quoted text\"" H 1300 3450 50  0001 C CNN "Test"
 	1    1300 3450
 	0    1    1    0   
 $EndComp

@@ -105,16 +105,16 @@ class LibComponentField(object):
     """ A field for a component in the library.
         Almost the same as a field in the schematic, but incompatible!!! """
     # F n "text" posx posy dimension orientation visibility hjustify vjustify/italic/bold "name"
-    field_re = re.compile(r'F\s*(\d+)\s+'  # 0 Field number
-                          r'"([^"]*)"\s+'  # 1 Field value
-                          r'(-?\d+)\s+'    # 2 Pos X
-                          r'(-?\d+)\s+'    # 3 Pos Y
-                          r'(\d+)\s+'      # 4 Dimension
-                          r'([HV])\s+'     # 5 Orientation
-                          r'([VI])\s+'     # 6 Visibility
-                          r'([LRCBT])\s+'  # 7 HJustify
-                          r'([LRCBT][IN][BN])\s*'  # 8 VJustify+Italic+Bold
-                          r'("[^"]*")?')   # 9 Name for user fields
+    field_re = re.compile(r'F\s*(\d+)\s+'               # 0 Field number
+                          r'"((?:[^\\]|(?:\\.))*)"\s+'  # 1 Field value
+                          r'(-?\d+)\s+'                 # 2 Pos X
+                          r'(-?\d+)\s+'                 # 3 Pos Y
+                          r'(\d+)\s+'                   # 4 Dimension
+                          r'([HV])\s+'                  # 5 Orientation
+                          r'([VI])\s+'                  # 6 Visibility
+                          r'([LRCBT])\s+'               # 7 HJustify
+                          r'([LRCBT][IN][BN])\s*'       # 8 VJustify+Italic+Bold
+                          r'("(?:[^\\]|(?:\\.))*")?')   # 9 Name for user fields
 
     def __init__(self):
         super().__init__()
@@ -721,8 +721,8 @@ class DocLib(object):
 
 class SchematicField(object):
     # F n "text" orientation posx posy dimension flags hjustify vjustify/italic/bold "name"
-    field_re = re.compile(r'F\s*(\d+)\s+"([^"]*)"\s+([HV])\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)'
-                          r'\s+([LRCBT])\s+([LRCBT][IN][BN])\s*("[^"]*")?')
+    field_re = re.compile(r'F\s*(\d+)\s+"((?:[^\\]|(?:\\.))*)"\s+([HV])\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)'
+                          r'\s+([LRCBT])\s+([LRCBT][IN][BN])\s*("(?:[^\\]|(?:\\.))*")?')
 
     def __init__(self):
         super().__init__()

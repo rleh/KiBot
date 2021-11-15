@@ -303,7 +303,7 @@ def test_auto_pcb_and_cfg_5(test_dir):
 
 def test_list(test_dir):
     ctx = context.TestContext(test_dir, 'List', '3Rs', 'pre_and_position', POS_DIR)
-    ctx.run(extra=['--list'], no_verbose=True, no_out_dir=True, no_board_file=True)
+    ctx.run(extra=['--list'], no_verbose=True, no_out_dir=True)
 
     assert ctx.search_out('run_erc: True')
     assert ctx.search_out('run_drc: True')

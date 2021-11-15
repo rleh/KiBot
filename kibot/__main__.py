@@ -10,7 +10,7 @@
 Usage:
   kibot [-b BOARD] [-e SCHEMA] [-c CONFIG] [-d OUT_DIR] [-s PRE]
          [-q | -v...] [-i] [-m MKFILE] [-g DEF]... [TARGET...]
-  kibot [-v...] [-c PLOT_CONFIG] --list
+  kibot [-v...] [-b BOARD] [-e SCHEMA] [-c PLOT_CONFIG] --list
   kibot [-v...] [-b BOARD] [-d OUT_DIR] [-p | -P] --example
   kibot [-v...] --help-filters
   kibot [-v...] --help-list-outputs

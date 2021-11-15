@@ -90,7 +90,9 @@ def list_pre_and_outs(logger, outputs):
     if len(outputs):
         logger.info('Outputs:')
         for o in outputs:
-            config_output(o, dry=True)
+            # Note: we can't do a `dry` config because some layer and field names can be validated only if we
+            # load the schematic and the PCB.
+            config_output(o, dry=False)
             logger.info('- '+str(o))
 
 
@@ -341,15 +343,16 @@ def main():
         with open(plot_config) as cf_file:
             outputs = cr.read(cf_file)
 
+    # Determine the SCH file
+    GS.set_sch(solve_schematic(args.schematic, args.board_file, plot_config))
+    # Determine the PCB file
+    GS.set_pcb(solve_board_file(GS.sch_file, args.board_file))
+
     # Is just list the available targets?
     if args.list:
         list_pre_and_outs(logger, outputs)
         sys.exit(0)
 
-    # Determine the SCH file
-    GS.set_sch(solve_schematic(args.schematic, args.board_file, plot_config))
-    # Determine the PCB file
-    GS.set_pcb(solve_board_file(GS.sch_file, args.board_file))
     if args.makefile:
         # Only create a makefile
         generate_makefile(args.makefile, plot_config, outputs)

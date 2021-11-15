@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Internal BoM: now components with different Tolerance, Voltage, Current
   and/or Power fields aren't grouped together.
   These fields are now part of the default `group_fields`. (#79)
+- Internal BoM: the field used for variants doesn't produce conflicts. (#100)
 
 ### Fixed
 - Position files now defaults to use the auxiliar origin as KiCad.

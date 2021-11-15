@@ -720,7 +720,7 @@ Next time you need this list just use an alias, like this:
         - `merge_both_blank`: [boolean=true] When creating groups two components with empty/missing field will be interpreted as with the same value.
         - `no_conflict`: [list(string)] List of fields where we tolerate conflicts.
                          Use it to avoid undesired warnings.
-                         By default the field indicated in `fit_field` and the field `part` are excluded.
+                         By default the field indicated in `fit_field`, the field used for variants and the field `part` are excluded.
         - `no_distributors`: [string|list(string)] Exclude this distributors list. They are removed after computing `distributors`.
         - `normalize_locale`: [boolean=false] When normalizing values use the locale decimal point.
         - `normalize_values`: [boolean=false] Try to normalize the R, L and C values, producing uniform units and prefixes.

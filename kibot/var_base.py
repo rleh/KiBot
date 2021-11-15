@@ -39,6 +39,10 @@ class BaseVariant(RegVariant):
             """ [string|list(string)=''] Name of the filter to mark components as 'Do Not Change'.
                 Use '_kibom_dnc' for the default KiBoM behavior """
 
+    def get_variant_field(self):
+        ''' Returns the name of the field used to determine if the component belongs to teh variant '''
+        return None
+
     def filter(self, comps):
         # Apply all the filters
         comps = apply_pre_transform(comps, self.pre_transform)

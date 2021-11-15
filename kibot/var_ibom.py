@@ -32,6 +32,10 @@ class IBoM(BaseVariant):  # noqa: F821
             self.variants_whitelist = Optionable
             """ [string|list(string)=''] List of board variants to include in the BOM """
 
+    def get_variant_field(self):
+        ''' Returns the name of the field used to determine if the component belongs to teh variant '''
+        return self.variant_field
+
     def config(self, parent):
         super().config(parent)
         self.pre_transform = BaseFilter.solve_filter(self.pre_transform, 'pre_transform', is_transform=True)

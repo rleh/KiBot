@@ -358,7 +358,7 @@ class BoMOptions(BaseOptions):
             self.no_conflict = NoConflict
             """ [list(string)] List of fields where we tolerate conflicts.
                 Use it to avoid undesired warnings.
-                By default the field indicated in `fit_field` and the field `part` are excluded """
+                By default the field indicated in `fit_field`, the field used for variants and the field `part` are excluded """
             self.aggregate = Aggregate
             """ [list(dict)] Add components from other projects """
             self.ref_id = ''
@@ -524,6 +524,9 @@ class BoMOptions(BaseOptions):
         if isinstance(self.no_conflict, type):
             no_conflict.add(self.fit_field)
             no_conflict.add('part')
+            var_field = self.variant.get_variant_field()
+            if var_field is not None:
+                no_conflict.add(var_field)
         else:
             for field in self.no_conflict:
                 no_conflict.add(field.lower())

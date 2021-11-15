@@ -36,6 +36,10 @@ class KiCost(BaseVariant):  # noqa: F821
             """ Valid separators for variants in the variant field.
                 Each character is a valid separator """
 
+    def get_variant_field(self):
+        ''' Returns the name of the field used to determine if the component belongs to teh variant '''
+        return self.variant_field
+
     def config(self, parent):
         super().config(parent)
         self.pre_transform = BaseFilter.solve_filter(self.pre_transform, 'pre_transform',

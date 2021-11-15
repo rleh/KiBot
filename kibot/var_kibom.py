@@ -33,6 +33,10 @@ class KiBoM(BaseVariant):  # noqa: F821
             self.variant = Optionable
             """ [string|list(string)=''] Board variant(s) """
 
+    def get_variant_field(self):
+        ''' Returns the name of the field used to determine if the component belongs to teh variant '''
+        return self.config_field
+
     def set_def_filters(self, exclude_filter, dnf_filter, dnc_filter):
         """ Filters delegated to the variant """
         self._def_exclude_filter = exclude_filter

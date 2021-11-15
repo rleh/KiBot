@@ -169,7 +169,7 @@ outputs:
       merge_both_blank: true
       # [list(string)] List of fields where we tolerate conflicts.
       # Use it to avoid undesired warnings.
-      # By default the field indicated in `fit_field` and the field `part` are excluded
+      # By default the field indicated in `fit_field`, the field used for variants and the field `part` are excluded
       no_conflict: ['Config', 'Part']
       # [string|list(string)] Exclude this distributors list. They are removed after computing `distributors`
       no_distributors:

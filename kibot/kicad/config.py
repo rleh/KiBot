@@ -242,7 +242,10 @@ class KiConf(object):
                     logger.debug('- KiCad var: {}="{}"'.format(k, v))
                 KiConf.kicad_env[k] = v
         else:
-            logger.warning(W_NOKIENV + 'KiCad config without environment.vars section')
+            logger.warning(W_NOKIENV + 'KiCad config without environment.vars section. Assuming default paths for linux.')
+            KiConf.kicad_env["KICAD6_3DMODEL_DIR"] = "/usr/share/kicad/3dmodels/"
+            KiConf.kicad_env["KICAD6_FOOTPRINT_DIR"] = "/usr/share/kicad/footprints/"
+            KiConf.kicad_env["KICAD6_SYMBOL_DIR"] = "/usr/share/kicad/symbols/"
 
     def load_kicad_common():
         # Try to figure out KiCad configuration file
